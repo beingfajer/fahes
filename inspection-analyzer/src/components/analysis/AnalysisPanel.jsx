@@ -112,7 +112,6 @@ function PhotoAnalysis({ photos }) {
           border: '1px solid var(--border2)', background: 'var(--surface)',
         }}>
           <div style={{ fontWeight: 500, marginBottom: 4, color: 'var(--text)', fontSize: 12 }}>
-            📎 {photo.fileName}
             {photo.source && (
               <span style={{
                 marginLeft: 8, fontSize: 10, padding: '1px 7px',
@@ -169,7 +168,10 @@ function PhotoAnalysis({ photos }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <AlertTriangle size={14} color="#E24B4A" style={{ flexShrink: 0 }} />
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-                  {d.class.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                  {d.class
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, c => c.toUpperCase())
+                    .replace(/\bAi\b/g, 'AI')}
                 </div>
               </div>
               <ConfidenceBadge confidence={d.confidence} />
@@ -209,7 +211,7 @@ export default function AnalysisPanel({ result, error, saved }) {
       <div className="section-label"><Sparkles size={14} /> Analysis Results</div>
 
       {error && <div className="alert alert--error">Error: {error}</div>}
-      {saved && <div className="alert alert--success">✓ Report saved to dashboard.</div>}
+      {saved && <div className="alert alert--success"> Report saved to dashboard.</div>}
 
       {result && (
         <motion.div className="analysis-panel__content" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
