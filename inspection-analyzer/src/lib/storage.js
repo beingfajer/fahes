@@ -25,5 +25,5 @@ export async function saveUploadedFile(file, subfolder) {
   const buffer = Buffer.from(await file.arrayBuffer())
   await writeFile(fullPath, buffer)
 
-  return { relativePath, fileName: file.name }
+  return { relativePath, fileName: file.name, buffer }
 }

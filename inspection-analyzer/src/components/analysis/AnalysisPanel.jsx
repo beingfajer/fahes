@@ -91,10 +91,15 @@ function ConfidenceBadge({ confidence }) {
   )
 }
 
+function isViolatingPhoto(photo) {
+  if (photo.hasViolation) return true
+  return Boolean(photo.violationClass && photo.violationClass !== 'no_violation')
+}
+
 function PhotoAnalysis({ photos }) {
   if (!photos?.length) return null
 
-  const violatingPhotos = photos.filter(p => p.hasViolation)
+  const violatingPhotos = photos.filter(isViolatingPhoto)
   const hasDetections = violatingPhotos.length > 0
 
   return (
@@ -155,7 +160,7 @@ function PhotoAnalysis({ photos }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <AlertTriangle size={14} color="#E24B4A" style={{ flexShrink: 0 }} />
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-                {photo.violationClass
+                {(photo.violationClass || 'violation')
                   .replace(/_/g, ' ')
                   .replace(/\b\w/g, c => c.toUpperCase())}
               </div>

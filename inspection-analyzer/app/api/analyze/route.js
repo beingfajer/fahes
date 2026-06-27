@@ -43,9 +43,8 @@ export async function POST(request) {
       if (!ALLOWED_PHOTO_TYPES.includes(entry.type)) continue
 
       const saved = await saveUploadedFile(entry, 'photos')
-      const buffer = Buffer.from(await entry.arrayBuffer())
-      const base64 = buffer.toString('base64')
-      const cv = await analyzePhotoWithAI(base64, entry.type)
+      const base64 = saved.buffer.toString('base64')
+      const cv = await analyzePhotoWithAI(base64, entry.type, saved.fileName)
 
       console.log(`Photo: ${saved.fileName} → class: ${cv.violationClass} | summary: ${cv.summary}`)
 
@@ -61,7 +60,7 @@ export async function POST(request) {
     // add photo check to checklist
     const checks = [...analysis.checks]
     if (photos.length > 0) {
-      const anyViolation = photos.some(p => p.hasViolation)
+      const anyViolation = photos.some(p => p.hasViolation || (p.violationClass && p.violationClass !== 'no_violation'))
       checks.push({
         label: 'Violation detected in photo evidence',
         pass: anyViolation,

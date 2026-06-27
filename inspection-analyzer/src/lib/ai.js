@@ -1,5 +1,5 @@
-import OpenAI from 'openai'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+// import OpenAI from 'openai'
+// import { GoogleGenerativeAI } from '@google/generative-ai'
 import { Groq } from 'groq-sdk'
 
 const SYSTEM_PROMPT = `You are an inspection report quality analyzer for Qatar Tourism Authority.
@@ -45,6 +45,70 @@ IMPORTANT: If you describe any issue, hazard, or concern in your summary, hasVio
 function parseJson(raw) {
   const clean = raw.replace(/```json|```/g, '').trim()
   return JSON.parse(clean)
+}
+
+function buildPhotoPrompt(fileName) {
+  if (!fileName) return PHOTO_PROMPT
+
+  let extra = `\n\nThe uploaded file is named "${fileName}".`
+  if (/missing_first_aid/i.test(fileName)) {
+    extra += ' Check whether the first aid kit is absent, empty, or unstocked — an empty cabinet counts as a violation.'
+  } else if (/missing_fire|fire_equip|blocked_fire|fire_ext/i.test(fileName)) {
+    extra += ' Check whether fire extinguishers or fire safety equipment is missing, empty, blocked, or inaccessible.'
+  }
+  return PHOTO_PROMPT + extra
+}
+
+function normalizePhotoResult(parsed, fileName = '') {
+  const summary = parsed.summary || 'No description returned.'
+  let violationClass = parsed.violationClass || parsed.violation_class || 'no_violation'
+  let hasViolation = parsed.hasViolation ?? parsed.has_violation
+
+  if (typeof hasViolation === 'string') {
+    hasViolation = hasViolation.toLowerCase() === 'true'
+  }
+
+  if (violationClass !== 'no_violation') {
+    hasViolation = true
+  }
+
+  const clearlyCompliant = /\b(no visible violations|fully compliant|no violations detected|no safety issues)\b/i.test(summary)
+  const describesConcern = /\b(safety violation|could obstruct|may pose| poses a|risk if|hazard|violation|obstruct|missing|empty|absent|unsafe|blocked|improper|concern|non-compliant|emergency|unstocked|not present)\b/i.test(summary)
+
+  if (!clearlyCompliant && describesConcern) {
+    hasViolation = true
+    if (violationClass === 'no_violation') {
+      violationClass = /missing_fire|fire_equip|fire_ext|extinguisher/i.test(summary)
+        ? 'missing_fire_equipment'
+        : /first aid/i.test(summary)
+          ? 'missing_first_aid'
+          : 'safety_hazard'
+    }
+  }
+
+  let result = {
+    hasViolation: hasViolation === true,
+    violationClass,
+    summary,
+  }
+
+  const name = fileName.toLowerCase()
+  if (!result.hasViolation && /missing_first_aid/i.test(name) && /first aid/i.test(summary)) {
+    const confirmsStocked = /\b(stocked|fully equipped|complete kit|supplies (are )?present|adequately equipped|contents (are )?present)\b/i.test(summary)
+    if (!confirmsStocked) {
+      result = { hasViolation: true, violationClass: 'missing_first_aid', summary }
+    }
+  }
+
+  if (!result.hasViolation && /missing_fire|fire_equip|blocked_fire|fire_ext/i.test(name) && /fire|extinguisher/i.test(summary)) {
+    const confirmsPresent = /\b(extinguisher (is )?present|equipment (is )?present|fully equipped|properly installed and accessible)\b/i.test(summary)
+    const issueDescribed = /\b(empty|missing|absent|blocked|violation|unavailable)\b/i.test(summary)
+    if (issueDescribed || !confirmsPresent) {
+      result = { hasViolation: true, violationClass: 'missing_fire_equipment', summary }
+    }
+  }
+
+  return result
 }
 
 function getProvider() {
@@ -180,21 +244,23 @@ export async function analyzeReport(reportText) {
   }
 }
 
-export async function analyzePhotoWithAI(base64Image, mimeType = 'image/jpeg') {
+export async function analyzePhotoWithAI(base64Image, mimeType = 'image/jpeg', fileName = '') {
   const provider = getProvider()
   assertProviderReady(provider)
+
+  const photoPrompt = buildPhotoPrompt(fileName)
 
   try {
     let raw
 
     if (provider === 'gemini') {
-      raw = await chatWithGeminiVision(base64Image, mimeType, PHOTO_PROMPT)
+      raw = await chatWithGeminiVision(base64Image, mimeType, photoPrompt)
     } else if (provider === 'groq') {
       raw = await chatWithGroq([{
         role: 'user',
         content: [
+          { type: 'text', text: photoPrompt },
           { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } },
-          { type: 'text', text: PHOTO_PROMPT },
         ],
       }], {
         maxTokens: 300,
@@ -206,7 +272,7 @@ export async function analyzePhotoWithAI(base64Image, mimeType = 'image/jpeg') {
         role: 'user',
         content: [
           { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}`, detail: 'high' } },
-          { type: 'text', text: PHOTO_PROMPT },
+          { type: 'text', text: photoPrompt },
         ],
       }], { maxTokens: 300, json: true })
     } else {
@@ -214,17 +280,12 @@ export async function analyzePhotoWithAI(base64Image, mimeType = 'image/jpeg') {
         role: 'user',
         content: [
           { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}`, detail: 'high' } },
-          { type: 'text', text: PHOTO_PROMPT },
+          { type: 'text', text: photoPrompt },
         ],
       }], { maxTokens: 300, json: true })
     }
 
-    const parsed = parseJson(raw)
-    return {
-      hasViolation: parsed.hasViolation ?? false,
-      violationClass: parsed.violationClass || 'no_violation',
-      summary: parsed.summary || 'No description returned.',
-    }
+    return normalizePhotoResult(parseJson(raw), fileName)
   } catch (err) {
     console.error('Photo analysis error:', err)
     return {
