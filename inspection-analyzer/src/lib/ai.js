@@ -10,10 +10,11 @@ Analyze the given inspection report and return ONLY valid JSON (no markdown, no 
   "checks": [
     {"label": "Date & time recorded", "pass": <true/false>, "hint": "<tip if missing, empty string if pass>"},
     {"label": "Location specified", "pass": <true/false>, "hint": ""},
+    {"label": "Reporter identified", "pass": <true/false>, "hint": ""},
     {"label": "Violation code referenced", "pass": <true/false>, "hint": ""},
     {"label": "Severity level assessed", "pass": <true/false>, "hint": ""},
     {"label": "Owner / contact present", "pass": <true/false>, "hint": ""},
-    {"label": "Action taken documented", "pass": <true/false>, "hint": ""},
+    {"label": "Corrective actions documented", "pass": <true/false>, "hint": ""},
     {"label": "Follow-up scheduled", "pass": <true/false>, "hint": ""}
   ]
 }`
