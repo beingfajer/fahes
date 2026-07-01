@@ -68,12 +68,12 @@ const FEATURES = [
   {
     icon: BarChart3,
     title: 'Instant completeness score',
-    body: 'AI checks the report against an 8-point standard and tells you exactly what is missing.',
+    body: 'AI checks the report against an 9-point standard and tells you exactly what is missing.',
   },
   {
     icon: Camera,
     title: 'Photo violation detection',
-    body: 'Upload site photos and a trained vision model flags hazards automatically.',
+    body: 'Upload site photos and let AI detect violations.',
   },
 ]
 
