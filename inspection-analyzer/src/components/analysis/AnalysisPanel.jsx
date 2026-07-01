@@ -108,7 +108,7 @@ function PhotoAnalysis({ photos }) {
         <Camera size={12} /> Photo Analysis
       </div>
 
-      {/* Per-photo summary */}
+      {/* Per-photo summary
       {photos.map((photo, i) => (
         <div key={i} style={{
           padding: '10px 12px', borderRadius: 9, marginBottom: 6,
@@ -117,7 +117,7 @@ function PhotoAnalysis({ photos }) {
           <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 4 }}>{photo.fileName}</div>
           <div style={{ fontSize: 12, color: 'var(--text2)' }}>{photo.summary}</div>
         </div>
-      ))}
+      ))} */}
 
       {/* Violations detected section */}
       <div style={{ marginTop: 14 }}>
