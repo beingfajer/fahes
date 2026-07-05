@@ -195,7 +195,22 @@
 }
 
 @media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
   .reports-stats {
     grid-template-columns: 1fr;
+  }
+
+  .reports-table {
+    overflow-x: auto;
+  }
+
+  .reports-table__head,
+  .reports-table__row {
+    min-width: 520px;
   }
 }

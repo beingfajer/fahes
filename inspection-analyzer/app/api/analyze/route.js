@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { extractTextFromDocument } from '@/lib/document'
 import { analyzeReport, analyzePhotoWithAI } from '@/lib/ai'
+import { reportMentionsViolation } from '@/lib/report'
 import { saveBuffer, saveUploadedFile } from '@/lib/storage'
 
 export const maxDuration = 60
@@ -57,9 +58,17 @@ export async function POST(request) {
       })
     }
 
-    // add photo check to checklist
+    // photo-related checklist items
     const checks = [...analysis.checks]
-    if (photos.length > 0) {
+    const mentionsViolation = reportMentionsViolation(extractedText)
+
+    if (mentionsViolation && photos.length === 0) {
+      checks.push({
+        label: 'Violation photo evidence uploaded',
+        pass: false,
+        hint: 'The report references a violation but no supporting photos were uploaded.',
+      })
+    } else if (photos.length > 0) {
       const anyViolation = photos.some(p => p.hasViolation || (p.violationClass && p.violationClass !== 'no_violation'))
       checks.push({
         label: 'Violation detected in photo evidence',

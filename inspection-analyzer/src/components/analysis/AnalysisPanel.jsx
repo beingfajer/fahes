@@ -204,35 +204,56 @@ function LoadingSteps() {
   )
 }
 
+export function AnalysisContent({ result, error, saved, analyzing }) {
+  if (analyzing) {
+    return (
+      <div className="analysis-panel__empty analysis-panel__empty--compact">
+        <div className="analysis-panel__loading">
+          <div className="analysis-panel__loading-ring">
+            <svg width="72" height="72" viewBox="0 0 72 72" style={{ transform: 'rotate(-90deg)' }}>
+              <circle fill="none" stroke="var(--p100)" strokeWidth="6" cx="36" cy="36" r="30" />
+              <motion.circle
+                fill="none" stroke="var(--p400)" strokeWidth="6" strokeLinecap="round"
+                cx="36" cy="36" r="30"
+                strokeDasharray="188"
+                animate={{ strokeDashoffset: [188, 40, 188] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </svg>
+            <div className="analysis-panel__loading-icon">
+              <Sparkles size={18} color="var(--p500)" />
+            </div>
+          </div>
+          <LoadingSteps />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {error && <div className="alert alert--error">Error: {error}</div>}
+      {saved && <div className="alert alert--success">Report saved to dashboard.</div>}
+
+      {result && (
+        <motion.div className="analysis-panel__content" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <ScoreRing score={result.score} />
+          <div className="summary-box">{result.summary}</div>
+          <div className="checklist-heading">Required fields</div>
+          {result.checks.map((c, i) => <CheckItem key={i} item={c} />)}
+          <PhotoAnalysis photos={result.photos} />
+        </motion.div>
+      )}
+    </>
+  )
+}
+
 export default function AnalysisPanel({ result, error, saved, analyzing }) {
   if (analyzing) {
     return (
       <div className="card">
         <div className="section-label"><Sparkles size={14} /> Analysis Results</div>
-        <div className="analysis-panel__empty">
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '24px 0' }}>
-
-            {/* Animated ring */}
-            <div style={{ position: 'relative', width: 72, height: 72 }}>
-              <svg width="72" height="72" viewBox="0 0 72 72" style={{ transform: 'rotate(-90deg)' }}>
-                <circle fill="none" stroke="var(--p100)" strokeWidth="6" cx="36" cy="36" r="30" />
-                <motion.circle
-                  fill="none" stroke="var(--p400)" strokeWidth="6" strokeLinecap="round"
-                  cx="36" cy="36" r="30"
-                  strokeDasharray="188"
-                  animate={{ strokeDashoffset: [188, 40, 188] }}
-                  transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                />
-              </svg>
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Sparkles size={18} color="var(--p500)" />
-              </div>
-            </div>
-
-            {/* Cycling status messages */}
-            <LoadingSteps hasPhotos={false} />
-          </div>
-        </div>
+        <AnalysisContent result={result} error={error} saved={saved} analyzing={analyzing} />
       </div>
     )
   }
@@ -254,19 +275,7 @@ export default function AnalysisPanel({ result, error, saved, analyzing }) {
   return (
     <div className="card">
       <div className="section-label"><Sparkles size={14} /> Analysis Results</div>
-
-      {error && <div className="alert alert--error">Error: {error}</div>}
-      {saved && <div className="alert alert--success">Report saved to dashboard.</div>}
-
-      {result && (
-        <motion.div className="analysis-panel__content" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <ScoreRing score={result.score} />
-          <div className="summary-box">{result.summary}</div>
-          <div className="checklist-heading">Required fields</div>
-          {result.checks.map((c, i) => <CheckItem key={i} item={c} />)}
-          <PhotoAnalysis photos={result.photos} />
-        </motion.div>
-      )}
+      <AnalysisContent result={result} error={error} saved={saved} analyzing={analyzing} />
     </div>
   )
 }

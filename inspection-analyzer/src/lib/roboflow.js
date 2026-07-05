@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises'
 import { resolveUploadPath } from '@/lib/storage'
 import { analyzePhotoWithAzure } from '@/lib/ai'
+import { reportMentionsViolation } from '@/lib/report'
 
 const CONFIDENCE_THRESHOLD = parseFloat(process.env.ROBOFLOW_CONFIDENCE_THRESHOLD || '0.5')
 
@@ -27,16 +28,6 @@ function buildDetectionSummary(predictions) {
     .map(p => `${p.class} (${Math.round(p.confidence * 100)}%)`)
     .join(', ')
   return `Detected: ${top}`
-}
-
-function reportMentionsViolation(reportText) {
-  if (!reportText) return false
-  const keywords = [
-    'violation', 'hazard', 'blocked', 'missing', 'expired',
-    'unsafe', 'damaged', 'improper', 'non-compliant', 'issue', 'problem'
-  ]
-  const lower = reportText.toLowerCase()
-  return keywords.some(k => lower.includes(k))
 }
 
 export async function analyzePhoto(relativePath, reportText = '') {

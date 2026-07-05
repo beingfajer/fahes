@@ -1,50 +1,115 @@
 /* /submit page */
 
-.submission-form__textarea {
-  width: 100%;
-  height: 220px;
-  resize: vertical;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  line-height: 1.65;
+.submission-wizard {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.submission-wizard__card {
+  padding: 32px;
+}
+
+.submission-wizard__header {
+  margin-bottom: 28px;
+}
+
+.submission-wizard__title {
+  font-family: 'Syne', sans-serif;
+  font-size: 26px;
+  font-weight: 600;
   color: var(--text);
-  background: var(--surface2);
-  outline: none;
+  margin: 0 0 6px;
 }
 
-.submission-form__textarea:focus {
-  border-color: var(--p400);
-}
-
-.submission-form__examples-label {
-  font-size: 12px;
+.submission-wizard__meta {
+  font-size: 14px;
   color: var(--text3);
-  margin: 12px 0 7px;
+  margin: 0;
 }
 
-.submission-form__examples {
+.submission-wizard__stepper {
   display: flex;
-  gap: 7px;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
 }
 
-.submission-form__actions {
-  margin-top: 16px;
+.submission-wizard__stepper-item {
+  display: flex;
+  align-items: center;
 }
 
-.submission-form__actions .btn + .btn {
-  margin-top: 10px;
+.submission-wizard__step {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--p100);
+  color: var(--p500);
+  flex-shrink: 0;
 }
 
-.submission-form__actions .btn--ghost {
-  margin-top: 8px;
+.submission-wizard__step--active {
+  background: var(--p500);
+  color: white;
 }
 
-.upload-section-label {
-  margin-top: 20px;
+.submission-wizard__step--complete {
+  background: var(--p500);
+  color: white;
+}
+
+.submission-wizard__step-line {
+  width: 72px;
+  height: 2px;
+  background: var(--p100);
+  margin: 0 4px;
+}
+
+.submission-wizard__step-line--complete {
+  background: var(--p400);
+}
+
+.submission-wizard__step-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+
+.submission-wizard__step-subtitle {
+  font-size: 13px;
+  color: var(--text3);
+  margin: 0 0 20px;
+}
+
+.submission-wizard__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.submission-wizard__actions--end {
+  justify-content: flex-end;
+}
+
+.submission-wizard__actions--split {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.submission-wizard__actions--stack {
+  flex-direction: column;
+}
+
+.submission-wizard__analyze-btn {
+  width: auto;
+  padding: 13px 24px;
 }
 
 .upload-optional {
@@ -98,28 +163,29 @@
   margin-top: 4px;
 }
 
-.photo-analysis {
-  margin-top: 16px;
+.analysis-panel__empty--compact {
+  padding: 32px 16px;
 }
 
-.photo-analysis__item {
-  padding: 10px 12px;
-  border: 1px solid var(--border2);
-  border-radius: 9px;
-  margin-bottom: 8px;
-  background: var(--surface2);
+.analysis-panel__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
-.photo-analysis__name {
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 4px;
+.analysis-panel__loading-ring {
+  position: relative;
+  width: 72px;
+  height: 72px;
 }
 
-.photo-analysis__summary {
-  font-size: 12px;
-  color: var(--text2);
-  line-height: 1.45;
+.analysis-panel__loading-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .analysis-panel__empty {
@@ -141,4 +207,80 @@
   font-size: 14px;
   max-width: 200px;
   line-height: 1.5;
+}
+
+.photo-analysis {
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .submission-wizard {
+    max-width: 100%;
+  }
+
+  .submission-wizard__card {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .submission-wizard__header {
+    margin-bottom: 22px;
+  }
+
+  .submission-wizard__title {
+    font-size: 22px;
+  }
+
+  .submission-wizard__meta {
+    font-size: 13px;
+  }
+
+  .submission-wizard__stepper {
+    margin-bottom: 24px;
+  }
+
+  .submission-wizard__step {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .submission-wizard__step-line {
+    width: 36px;
+  }
+
+  .submission-wizard__step-title {
+    font-size: 16px;
+  }
+
+  .submission-wizard__actions--end .btn,
+  .submission-wizard__actions--stack .btn {
+    width: 100%;
+  }
+
+  .submission-wizard__actions--split {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .submission-wizard__analyze-btn {
+    width: 100%;
+  }
+
+  .upload-zone {
+    min-height: 76px;
+  }
+
+  .upload-zone--photos {
+    min-height: 64px;
+  }
+
+  .upload-zone__label {
+    font-size: 12.5px;
+    word-break: break-word;
+  }
+
+  .analysis-panel__empty--compact {
+    padding: 24px 8px;
+  }
 }

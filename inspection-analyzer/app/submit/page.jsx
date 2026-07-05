@@ -2,26 +2,17 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import SubmissionForm from '@/components/submission/SubmissionForm'
-import AnalysisPanel from '@/components/analysis/AnalysisPanel'
+import SubmissionWizard from '@/components/submission/SubmissionWizard'
 
 export default function SubmitPage() {
   const router = useRouter()
-  const [result, setResult] = useState(null)
-  const [error, setError] = useState(null)
-  const [analyzing, setAnalyzing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-
-  function handleResult(data, err, isAnalyzing = false) {
-    setAnalyzing(isAnalyzing)
-    setSaved(false)
-    setResult(data)
-    setError(err)
-  }
+  const [error, setError] = useState(null)
 
   async function handleSave(analysisResult) {
     setSaving(true)
+    setError(null)
     try {
       const res = await fetch('/api/reports', {
         method: 'POST',
@@ -47,20 +38,11 @@ export default function SubmitPage() {
   }
 
   return (
-    <div className="two-column-grid">
-      <SubmissionForm
-        onResult={handleResult}
-        onSave={handleSave}
-        analyzing={analyzing}
-        saving={saving}
-        result={result}
-      />
-      <AnalysisPanel
-        result={result}
-        error={error}
-        saved={saved}
-        analyzing={analyzing}  // add this
-      />
-    </div>
+    <SubmissionWizard
+      onSave={handleSave}
+      saving={saving}
+      saved={saved}
+      saveError={error}
+    />
   )
 }
