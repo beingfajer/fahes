@@ -29,7 +29,7 @@ Return ONLY valid JSON with this exact structure (no markdown, no code fences):
   "summary": "<1-2 sentences describing what you see and what the violation is>"
 }
 
-Violation class options — pick the closest:
+Violation class options. Pick the closest:
 - food_safety_violation (improper food storage, uncovered food, wrong temperatures)
 - improper_storage (items stored incorrectly or dangerously)
 - hygiene_violation (unclean surfaces, poor sanitation)
@@ -53,7 +53,7 @@ function buildPhotoPrompt(fileName) {
 
   let extra = `\n\nThe uploaded file is named "${fileName}".`
   if (/missing_first_aid/i.test(fileName)) {
-    extra += ' Check whether the first aid kit is absent, empty, or unstocked — an empty cabinet counts as a violation.'
+    extra += ' Check whether the first aid kit is absent, empty, or unstocked. An empty cabinet counts as a violation.'
   } else if (/missing_fire|fire_equip|blocked_fire|fire_ext/i.test(fileName)) {
     extra += ' Check whether fire extinguishers or fire safety equipment is missing, empty, blocked, or inaccessible.'
   }

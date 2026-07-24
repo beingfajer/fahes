@@ -1,10 +1,14 @@
-import Link from 'next/link'
+'use client'
+
 import { ArrowLeft } from 'lucide-react'
+import { useReports } from '@/components/reports/ReportsProvider'
 
 export default function BackToReportsLink() {
+  const { openReports } = useReports()
+
   return (
-    <Link href="/reports" className="back-link">
-      <ArrowLeft size={15} /> Back to Reports
-    </Link>
+    <button type="button" className="back-link" onClick={openReports}>
+      <ArrowLeft size={15} /> All reports
+    </button>
   )
 }

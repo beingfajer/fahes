@@ -17,7 +17,7 @@ export default function ReportPhotosPanel({ photos }) {
               {detections.length > 0 && (
                 <ul className="report-photos__detections">
                   {detections.map((d, i) => (
-                    <li key={i}>{d.class} — {Math.round(d.confidence * 100)}%</li>
+                    <li key={i}>{d.class} ({Math.round(d.confidence * 100)}%)</li>
                   ))}
                 </ul>
               )}

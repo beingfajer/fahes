@@ -1,9 +1,9 @@
 import '@/styles/globals.css'
-import Header from '@/components/Header'
+import AppShell from '@/components/AppShell'
 
 export const metadata = {
-  title: 'Fahes - Inspection Report Analyzer',
-  description: 'AI-powered inspection report analyzer',
+  title: 'Fahes',
+  description: 'Inspection report completeness analysis for Qatar Tourism Authority',
 }
 
 const themeScript = `(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`
@@ -15,10 +15,7 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <Header />
-        <main className="app-main">
-          {children}
-        </main>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   )

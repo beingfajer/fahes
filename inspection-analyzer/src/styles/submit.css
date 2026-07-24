@@ -175,6 +175,7 @@
 .submission-wizard__analyze-btn {
   width: auto;
   padding: 13px 24px;
+  border-radius: var(--btn-radius);
 }
 
 .upload-optional {

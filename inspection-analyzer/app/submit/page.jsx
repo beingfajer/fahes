@@ -28,8 +28,9 @@ export default function SubmitPage() {
         }),
       })
       if (!res.ok) throw new Error('Failed to save')
+      const report = await res.json()
       setSaved(true)
-      setTimeout(() => router.push('/reports'), 1500)
+      setTimeout(() => router.push(`/reports/${report.id}`), 1500)
     } catch (e) {
       setError(e.message)
     } finally {

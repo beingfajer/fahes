@@ -119,7 +119,7 @@ export default function SubmissionWizard({ onSave, saved, saving, saveError }) {
           <div className="submission-wizard__header">
             <h1 className="submission-wizard__title">Submit Inspection Report</h1>
             <p className="submission-wizard__meta">
-              Step {step} of {WIZARD_STEPS.length} — {currentMeta.label}
+              Step {step} of {WIZARD_STEPS.length}: {currentMeta.label}
             </p>
           </div>
           <StepperHorizontal currentStep={step} />

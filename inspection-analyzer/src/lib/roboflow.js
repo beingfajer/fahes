@@ -37,7 +37,7 @@ export async function analyzePhoto(relativePath, reportText = '') {
   if (!apiKey || !workflowUrl) {
     return {
       detections: [],
-      summary: 'Photo CV skipped — set ROBOFLOW_API_KEY and ROBOFLOW_WORKFLOW_URL in .env',
+      summary: 'Photo CV skipped. Set ROBOFLOW_API_KEY and ROBOFLOW_WORKFLOW_URL in .env',
       source: 'skipped'
     }
   }
@@ -60,7 +60,7 @@ export async function analyzePhoto(relativePath, reportText = '') {
     const err = await res.text()
     console.error(`Roboflow error ${res.status}: ${err}`)
     if (reportMentionsViolation(reportText)) {
-      console.log('Roboflow failed — routing to Azure OpenAI')
+      console.log('Roboflow failed, routing to Azure OpenAI')
       return analyzePhotoWithAzure(base64)
     }
     return { detections: [], summary: 'Photo analysis unavailable.', source: 'error' }
@@ -87,7 +87,7 @@ export async function analyzePhoto(relativePath, reportText = '') {
 
   // option 2: Roboflow found nothing but report mentions violation, then route to Azure
   if (detections.length === 0 && reportMentionsViolation(reportText)) {
-    console.log('Roboflow found nothing but report mentions violation — routing to Azure OpenAI')
+    console.log('Roboflow found nothing but report mentions violation, routing to Azure OpenAI')
     return analyzePhotoWithAzure(base64)
   }
 
