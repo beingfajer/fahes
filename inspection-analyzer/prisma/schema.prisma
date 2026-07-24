@@ -12,6 +12,7 @@ model Report {
   text         String
   documentName String?
   documentPath String?
+  documentData Bytes?
   score        Int
   summary      String
   createdAt    DateTime    @default(now())
@@ -33,6 +34,7 @@ model Photo {
   id         String @id @default(cuid())
   fileName   String
   filePath   String
+  data       Bytes?
   detections String @default("[]")
   summary    String @default("")
   report     Report @relation(fields: [reportId], references: [id], onDelete: Cascade)

@@ -52,6 +52,7 @@ export async function POST(request) {
       photos.push({
         fileName: saved.fileName,
         filePath: saved.relativePath,
+        data: base64,
         violationClass: cv.violationClass,
         summary: cv.summary,
         hasViolation: cv.hasViolation,
@@ -83,6 +84,7 @@ export async function POST(request) {
       text: extractedText,
       documentName: savedDoc.fileName,
       documentPath: savedDoc.relativePath,
+      documentData: docBuffer.toString('base64'),
       photos,
     })
   } catch (error) {

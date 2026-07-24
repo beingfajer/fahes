@@ -1,3 +1,30 @@
+'use client'
+
+import { useState } from 'react'
+import { ImageOff } from 'lucide-react'
+
+function PhotoImage({ photo }) {
+  const [failed, setFailed] = useState(false)
+
+  if (failed) {
+    return (
+      <div className="report-photos__missing">
+        <ImageOff size={28} />
+        <span>Photo file is no longer available</span>
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={`/api/photos/${photo.id}`}
+      alt={photo.fileName}
+      className="report-photos__image"
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
 export default function ReportPhotosPanel({ photos }) {
   if (!photos?.length) return null
 
@@ -6,18 +33,25 @@ export default function ReportPhotosPanel({ photos }) {
       <div className="section-label">Violation Photos</div>
       <div className="report-photos__grid">
         {photos.map(photo => {
-          const detections = JSON.parse(photo.detections || '[]')
-          const fileUrl = `/api/files/${photo.filePath.split('/').map(encodeURIComponent).join('/')}`
+          let detections = []
+          try {
+            detections = JSON.parse(photo.detections || '[]')
+          } catch {
+            detections = []
+          }
 
           return (
             <div key={photo.id} className="report-photos__item">
-              <img src={fileUrl} alt={photo.fileName} className="report-photos__image" />
+              <PhotoImage photo={photo} />
               <div className="report-photos__name">{photo.fileName}</div>
               <div className="report-photos__summary">{photo.summary}</div>
               {detections.length > 0 && (
                 <ul className="report-photos__detections">
                   {detections.map((d, i) => (
-                    <li key={i}>{d.class} ({Math.round(d.confidence * 100)}%)</li>
+                    <li key={i}>
+                      {d.class}
+                      {typeof d.confidence === 'number' ? ` (${Math.round(d.confidence * 100)}%)` : ''}
+                    </li>
                   ))}
                 </ul>
               )}

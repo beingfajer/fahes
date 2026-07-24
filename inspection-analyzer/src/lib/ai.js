@@ -19,6 +19,23 @@ Analyze the given inspection report and return ONLY valid JSON (no markdown, no 
   ]
 }`
 
+const FIELD_EXTRACTION_PROMPT = `You are a data extraction assistant for Qatar Tourism Authority inspection reports.
+Extract the following fields from the inspection report text.
+Return ONLY valid JSON (no markdown, no code fences) with this exact structure.
+Use null for any field that is not explicitly present in the text. Do NOT guess or invent values:
+{
+  "referenceNumber": "<report reference number, e.g. QTA-2026-0721, or null>",
+  "inspectionDate": "<date of the inspection, or null>",
+  "inspectionTime": "<time of the inspection, or null>",
+  "location": "<inspected establishment name and/or address, or null>",
+  "inspectorName": "<name of the inspector or reporter, or null>",
+  "violationCode": "<violation code(s) referenced, including description in parentheses if given, or null>",
+  "severity": "<severity level (e.g. Low / Medium / High / Critical), or null>",
+  "ownerContact": "<establishment owner or contact person and their details, or null>",
+  "correctiveActions": "<short summary of the corrective actions documented, or null>",
+  "followUp": "<follow-up inspection details or date, or null>"
+}`
+
 const PHOTO_PROMPT = `You are a violation detection assistant for Qatar Tourism Authority.
 Look carefully at this photo and identify any visible violations.
 
@@ -136,14 +153,16 @@ function getGroqClient() {
   return new Groq({ apiKey: process.env.GROQ_API_KEY })
 }
 
-async function chatWithGroq(messages, { json = false, maxTokens = 1024, model } = {}) {
+async function chatWithGroq(messages, { json = false, maxTokens = 1024, model, reasoningEffort } = {}) {
   const client = getGroqClient()
   const result = await client.chat.completions.create({
-    model: model || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+    // llama-3.3-70b-versatile shuts down on Groq on 2026-08-16
+    model: model || process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
     messages,
     max_tokens: maxTokens,
     temperature: 0.1,
     ...(json ? { response_format: { type: 'json_object' } } : {}),
+    ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
   })
   return result.choices[0].message.content
 }
@@ -245,6 +264,34 @@ export async function analyzeReport(reportText) {
   }
 }
 
+export async function extractReportFields(reportText) {
+  const provider = getProvider()
+  assertProviderReady(provider)
+
+  const userMessage = `Extract the fields from this inspection report and return JSON only:\n\n${reportText}`
+
+  let raw
+  if (provider === 'azure') {
+    raw = await chatWithAzure([
+      { role: 'system', content: FIELD_EXTRACTION_PROMPT },
+      { role: 'user', content: userMessage },
+    ], { json: true })
+  } else if (provider === 'groq') {
+    raw = await chatWithGroq([
+      { role: 'system', content: FIELD_EXTRACTION_PROMPT },
+      { role: 'user', content: userMessage },
+    ], { json: true })
+  } else if (provider === 'gemini') {
+    raw = await chatWithGemini(`${FIELD_EXTRACTION_PROMPT}\n\n${userMessage}`, { json: true })
+  } else {
+    raw = await chatWithOpenAI([
+      { role: 'system', content: FIELD_EXTRACTION_PROMPT },
+      { role: 'user', content: userMessage },
+    ], { json: true })
+  }
+  return parseJson(raw)
+}
+
 export async function analyzePhotoWithAI(base64Image, mimeType = 'image/jpeg', fileName = '') {
   const provider = getProvider()
   assertProviderReady(provider)
@@ -264,9 +311,12 @@ export async function analyzePhotoWithAI(base64Image, mimeType = 'image/jpeg', f
           { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } },
         ],
       }], {
-        maxTokens: 300,
-        model: process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct',
+        maxTokens: 1024,
+        // llama-4-scout was decommissioned by Groq on 2026-07-17
+        model: process.env.GROQ_VISION_MODEL || 'qwen/qwen3.6-27b',
         json: true,
+        // qwen is a reasoning model; without this it spends the token budget thinking
+        reasoningEffort: 'none',
       })
     } else if (provider === 'azure') {
       raw = await chatWithAzure([{

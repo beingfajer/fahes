@@ -21,6 +21,7 @@ export default function SubmitPage() {
           text: analysisResult.text,
           documentName: analysisResult.documentName,
           documentPath: analysisResult.documentPath,
+          documentData: analysisResult.documentData,
           score: analysisResult.score,
           summary: analysisResult.summary,
           checks: analysisResult.checks,

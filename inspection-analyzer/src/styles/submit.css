@@ -179,10 +179,15 @@
   flex-direction: column;
 }
 
-.submission-wizard__analyze-btn {
+.submission-wizard__analyze-btn.btn--primary {
   width: auto;
-  padding: 13px 24px;
+  flex: 0 0 auto;
+  padding: 11px 18px;
+  font-size: 14px;
   border-radius: var(--btn-radius);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .submission-wizard__analysis {
@@ -491,16 +496,17 @@
   }
 
   .submission-wizard__actions--split {
-    flex-direction: column-reverse;
-    align-items: stretch;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .submission-wizard__actions--split .btn {
-    width: 100%;
+    width: auto;
   }
 
-  .submission-wizard__analyze-btn {
-    width: 100%;
+  .submission-wizard__analyze-btn.btn--primary {
+    width: auto;
   }
 
   .analysis-panel__empty--compact {

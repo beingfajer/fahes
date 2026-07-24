@@ -391,6 +391,7 @@ button {
   padding: 12px 12px;
   border-radius: var(--btn-radius);
   border: 1px solid transparent;
+  background: var(--surface);
   transition: background 0.15s, border-color 0.15s;
 }
 

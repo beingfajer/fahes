@@ -1,4 +1,6 @@
-export default function ReportTextPanel({ text, documentName, documentPath, createdAt, passedCount, totalCount }) {
+import { Download } from 'lucide-react'
+
+export default function ReportTextPanel({ reportId, text, documentName, createdAt, passedCount, totalCount }) {
   const formattedDate = new Date(createdAt).toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'long',
@@ -11,11 +13,9 @@ export default function ReportTextPanel({ text, documentName, documentPath, crea
     <div className="card">
       <div className="section-label">Report Document</div>
 
-      {documentName && documentPath && (
+      {documentName && (
         <a
-          href={`/api/files/${documentPath.split('/').map(encodeURIComponent).join('/')}`}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={`/api/reports/${reportId}/document`}
           className="report-document-link"
         >
           {documentName}
@@ -26,6 +26,13 @@ export default function ReportTextPanel({ text, documentName, documentPath, crea
       <div className="report-text__meta">
         {formattedDate} · {passedCount}/{totalCount} checks passed
       </div>
+
+      <a
+        href={`/api/reports/${reportId}/export`}
+        className="btn btn--outline report-export-btn"
+      >
+        <Download size={16} /> Download Structured Report (.docx)
+      </a>
     </div>
   )
 }

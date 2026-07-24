@@ -11,11 +11,12 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const { text, documentName, documentPath, score, summary, checks, photos } = await request.json()
+    const { text, documentName, documentPath, documentData, score, summary, checks, photos } = await request.json()
     const report = await reportRepository.create({
       text,
       documentName,
       documentPath,
+      documentData,
       score,
       summary,
       checks,
