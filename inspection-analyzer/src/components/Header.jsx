@@ -8,7 +8,7 @@ import { useReports } from '@/components/reports/ReportsProvider'
 export default function Header() {
   const pathname = usePathname()
   const { open, toggle } = useReports()
-  const assessActive = pathname === '/submit' || pathname.startsWith('/submit/')
+  const newReportActive = pathname === '/submit' || pathname.startsWith('/submit/')
 
   return (
     <header className="site-header">
@@ -20,13 +20,13 @@ export default function Header() {
         <nav className="site-header__nav" aria-label="Primary">
           <Link
             href="/submit"
-            className={`site-header__nav-link${assessActive ? ' site-header__nav-link--active' : ''}`}
+            className={`site-header__nav-link${newReportActive ? ' site-header__nav-link--active' : ''}`}
           >
-            Assess
+            New report
           </Link>
           <button
             type="button"
-            className={`site-header__nav-link site-header__nav-btn${open ? ' site-header__nav-link--active' : ''}`}
+            className={`site-header__nav-link${open ? ' site-header__nav-link--active' : ''}`}
             onClick={toggle}
             aria-expanded={open}
             aria-controls="reports-sidebar"

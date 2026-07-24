@@ -14,57 +14,7 @@ const SAMPLE_CHECKS = [
   'Owner / contact present',
 ]
 
-function ReportMorph() {
-  const [revealed, setRevealed] = useState(0)
-
-  useEffect(() => {
-    if (revealed >= SAMPLE_CHECKS.length) return
-    const t = setTimeout(() => setRevealed(r => r + 1), 480)
-    return () => clearTimeout(t)
-  }, [revealed])
-
-  return (
-    <div className="morph">
-      <div className="morph__panel morph__panel--raw">
-        <div className="morph__label">01 · Raw notes</div>
-        <p className="morph__scrawl">
-          Visited the property on Monday. Found some problems.
-          Owner was there. Will follow up.
-        </p>
-      </div>
-
-      <motion.div
-        className="morph__divider"
-        initial={{ scaleY: 0 }}
-        animate={{ scaleY: 1 }}
-        transition={{ duration: 0.5, delay: 0.15 }}
-        aria-hidden
-      />
-
-      <div className="morph__panel morph__panel--clean">
-        <div className="morph__label">02 · Readout</div>
-        <div className="morph__score">
-          <span className="morph__score-num">{Math.round((revealed / SAMPLE_CHECKS.length) * 100)}</span>
-          <span className="morph__score-unit">%</span>
-          <span className="morph__score-text">coverage</span>
-        </div>
-        <ul className="morph__list">
-          {SAMPLE_CHECKS.map((c, i) => (
-            <motion.li
-              key={c}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: i < revealed ? 1 : 0.28, y: 0 }}
-              transition={{ duration: 0.28 }}
-            >
-              {i < revealed ? <Check size={13} strokeWidth={2.5} className="morph__check" /> : <span className="morph__dot" />}
-              {c}
-            </motion.li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  )
-}
+const HEADLINE = 'Catch incomplete reports before enforcement stalls'
 
 const CAPABILITIES = [
   {
@@ -84,6 +34,102 @@ const CAPABILITIES = [
   },
 ]
 
+const reveal = {
+  initial: { opacity: 0, y: 36 },
+  inView: { opacity: 1, y: 0 },
+}
+
+const revealTransition = { duration: 0.55, ease: [0.22, 1, 0.36, 1] }
+
+function TypewriterTitle({ text, active }) {
+  const [shown, setShown] = useState('')
+  const [done, setDone] = useState(false)
+
+  useEffect(() => {
+    if (!active) {
+      setShown('')
+      setDone(false)
+      return
+    }
+
+    let i = 0
+    setShown('')
+    setDone(false)
+    const id = setInterval(() => {
+      i += 1
+      setShown(text.slice(0, i))
+      if (i >= text.length) {
+        clearInterval(id)
+        setDone(true)
+      }
+    }, 28)
+    return () => clearInterval(id)
+  }, [text, active])
+
+  return (
+    <h1 className="landing__title">
+      {shown}
+      <span className={`landing__caret${done ? ' landing__caret--done' : ''}`} aria-hidden />
+    </h1>
+  )
+}
+
+function ReportMorph() {
+  const [revealed, setRevealed] = useState(0)
+  const [started, setStarted] = useState(false)
+
+  useEffect(() => {
+    if (!started) return
+    if (revealed >= SAMPLE_CHECKS.length) return
+    const t = setTimeout(() => setRevealed(r => r + 1), 480)
+    return () => clearTimeout(t)
+  }, [revealed, started])
+
+  return (
+    <motion.div
+      className="morph"
+      initial={reveal.initial}
+      whileInView={reveal.inView}
+      viewport={{ once: false, amount: 0.35 }}
+      transition={revealTransition}
+      onViewportEnter={() => {
+        setStarted(true)
+        setRevealed(0)
+      }}
+    >
+      <div className="morph__panel morph__panel--raw">
+        <div className="morph__label">01 · Raw notes</div>
+        <p className="morph__scrawl">
+          Visited the property on Monday. Found some problems.
+          Owner was there. Will follow up.
+        </p>
+      </div>
+
+      <div className="morph__divider" aria-hidden />
+
+      <div className="morph__panel morph__panel--clean">
+        <div className="morph__label">02 · Readout</div>
+        <div className="morph__score">
+          <span className="morph__score-num">{Math.round((revealed / SAMPLE_CHECKS.length) * 100)}</span>
+          <span className="morph__score-unit">%</span>
+          <span className="morph__score-text">coverage</span>
+        </div>
+        <ul className="morph__list">
+          {SAMPLE_CHECKS.map((c, i) => (
+            <li
+              key={c}
+              style={{ opacity: i < revealed ? 1 : 0.28 }}
+            >
+              {i < revealed ? <Check size={13} strokeWidth={2.5} className="morph__check" /> : <span className="morph__dot" />}
+              {c}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </motion.div>
+  )
+}
+
 function ReportsOpenLink() {
   const { openReports } = useReports()
   return (
@@ -94,75 +140,76 @@ function ReportsOpenLink() {
 }
 
 export default function LandingPage() {
+  const [heroInView, setHeroInView] = useState(true)
+
   return (
     <div className="landing">
       <div className="landing__grid" aria-hidden />
 
-      <section className="landing__hero">
-        <motion.div
-          className="landing__hero-text"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        >
+      <motion.section
+        className="landing__hero"
+        initial={reveal.initial}
+        whileInView={reveal.inView}
+        viewport={{ once: false, amount: 0.4 }}
+        transition={revealTransition}
+        onViewportEnter={() => setHeroInView(true)}
+        onViewportLeave={() => setHeroInView(false)}
+      >
+        <div className="landing__hero-text">
           <p className="landing__brand">Fahes</p>
-          <p className="landing__meta">Qatar Tourism Authority</p>
-          <h1 className="landing__title">
-            Catch incomplete reports<br />before enforcement stalls.
-          </h1>
+          <TypewriterTitle text={HEADLINE} active={heroInView} />
           <div className="landing__cta-row">
             <Link href="/submit" className="landing__cta">
               Run an assessment <ArrowRight size={15} strokeWidth={2.25} />
             </Link>
             <ReportsOpenLink />
           </div>
-        </motion.div>
+        </div>
+      </motion.section>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <ReportMorph />
-        </motion.div>
-      </section>
-
-      <section className="landing__capabilities">
+      <motion.section
+        className="landing__capabilities"
+        initial={reveal.initial}
+        whileInView={reveal.inView}
+        viewport={{ once: false, amount: 0.25 }}
+        transition={{ ...revealTransition, delay: 0.05 }}
+      >
         <div className="landing__cap-head">
           <span className="landing__cap-kicker">What it does</span>
           <h2 className="landing__cap-title">Three moves. One standard.</h2>
         </div>
-        <div className="landing__cap-list">
-          {CAPABILITIES.map((c, i) => (
-            <motion.div
-              key={c.index}
-              className="landing__cap-item"
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 0.4, delay: i * 0.08 }}
-            >
-              <span className="landing__cap-index">{c.index}</span>
-              <div>
-                <h3>{c.title}</h3>
-                <p>{c.body}</p>
-              </div>
-            </motion.div>
-          ))}
+
+        <div className="landing__cap-row">
+          <div className="landing__cap-list">
+            {CAPABILITIES.map((c, i) => (
+              <motion.div
+                key={c.index}
+                className="landing__cap-item"
+                initial={reveal.initial}
+                whileInView={reveal.inView}
+                viewport={{ once: false, amount: 0.5 }}
+                transition={{ ...revealTransition, delay: i * 0.06 }}
+              >
+                <span className="landing__cap-index">{c.index}</span>
+                <div>
+                  <h3>{c.title}</h3>
+                  <p>{c.body}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <ReportMorph />
         </div>
-      </section>
+      </motion.section>
 
       <footer className="landing__footer">
         <span>Fahes</span>
-        <span className="landing__footer-sep" />
-        <span>Qatar Tourism Authority</span>
       </footer>
 
       <style>{`
         .landing {
           position: relative;
-          min-height: calc(100vh - 56px);
-          overflow: hidden;
           background: var(--bg);
         }
 
@@ -174,56 +221,56 @@ export default function LandingPage() {
             linear-gradient(var(--grid-line) 1px, transparent 1px),
             linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
           background-size: 48px 48px;
-          mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 75%);
+          mask-image: radial-gradient(ellipse 80% 55% at 50% 0%, black 15%, transparent 72%);
         }
 
         .landing__hero {
           position: relative;
-          max-width: 1120px;
+          max-width: 1180px;
           margin: 0 auto;
-          padding: 72px 40px 88px;
-          display: grid;
-          grid-template-columns: 1.05fr 0.95fr;
-          gap: 56px;
-          align-items: center;
+          padding: 96px 40px 100px;
         }
 
         .landing__brand {
           font-family: 'Syne', sans-serif;
-          font-size: clamp(48px, 7vw, 72px);
+          font-size: clamp(56px, 9vw, 88px);
           font-weight: 800;
           letter-spacing: -0.05em;
           line-height: 0.92;
           color: var(--text);
-          margin-bottom: 14px;
-        }
-
-        .landing__meta {
-          font-family: 'IBM Plex Mono', monospace;
-          font-size: 11px;
-          font-weight: 500;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: var(--text3);
           margin-bottom: 28px;
         }
 
         .landing__title {
           font-family: 'Syne', sans-serif;
           font-weight: 600;
-          font-size: clamp(22px, 2.6vw, 28px);
-          line-height: 1.25;
+          font-size: clamp(30px, 4.6vw, 48px);
+          line-height: 1.18;
           color: var(--text);
-          letter-spacing: -0.03em;
-          margin-bottom: 16px;
+          letter-spacing: -0.035em;
+          margin-bottom: 36px;
+          max-width: 18ch;
+          min-height: 2.5em;
         }
 
-        .landing__subtitle {
-          font-size: 15.5px;
-          line-height: 1.65;
-          color: var(--text2);
-          max-width: 420px;
-          margin-bottom: 32px;
+        .landing__caret {
+          display: inline-block;
+          width: 2px;
+          height: 0.85em;
+          margin-left: 3px;
+          vertical-align: -0.08em;
+          background: var(--lab-accent);
+          animation: landing-blink 0.9s step-end infinite;
+        }
+
+        .landing__caret--done {
+          animation: landing-blink 1.1s step-end 4;
+          animation-fill-mode: forwards;
+        }
+
+        @keyframes landing-blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
         }
 
         .landing__cta-row {
@@ -243,7 +290,7 @@ export default function LandingPage() {
           font-weight: 500;
           padding: 12px 20px;
           border-radius: var(--btn-radius);
-          transition: background 0.2s, transform 0.2s;
+          transition: background 0.2s;
         }
 
         .landing__cta:hover { background: var(--p600); }
@@ -267,17 +314,90 @@ export default function LandingPage() {
           border-bottom-color: var(--lab-accent);
         }
 
+        .landing__capabilities {
+          position: relative;
+          max-width: 1180px;
+          margin: 0 auto;
+          padding: 0 40px 110px;
+          padding-top: 64px;
+        }
+
+        .landing__cap-head { margin-bottom: 36px; }
+
+        .landing__cap-kicker {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 11px;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: var(--text3);
+          display: block;
+          margin-bottom: 10px;
+        }
+
+        .landing__cap-title {
+          font-family: 'Syne', sans-serif;
+          font-size: 24px;
+          font-weight: 600;
+          letter-spacing: -0.03em;
+          color: var(--text);
+        }
+
+        .landing__cap-row {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+          gap: 40px;
+          align-items: start;
+        }
+
+        .landing__cap-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .landing__cap-item {
+          display: flex;
+          gap: 16px;
+          padding: 14px 0;
+        }
+
+        .landing__cap-index {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 12px;
+          font-weight: 500;
+          color: var(--lab-accent);
+          flex-shrink: 0;
+          padding-top: 3px;
+        }
+
+        .landing__cap-item h3 {
+          font-family: 'Syne', sans-serif;
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--text);
+          margin-bottom: 8px;
+          letter-spacing: -0.02em;
+        }
+
+        .landing__cap-item p {
+          font-size: 13.5px;
+          line-height: 1.55;
+          color: var(--text2);
+        }
+
         .morph {
           display: grid;
           grid-template-columns: 1fr auto 1fr;
           gap: 0;
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: var(--radius);
+          border-radius: var(--btn-radius);
           overflow: hidden;
+          position: sticky;
+          top: 88px;
         }
 
-        .morph__panel { padding: 22px 20px; }
+        .morph__panel { padding: 22px 18px; }
 
         .morph__label {
           font-family: 'IBM Plex Mono', monospace;
@@ -302,7 +422,6 @@ export default function LandingPage() {
         .morph__divider {
           width: 1px;
           background: var(--border);
-          transform-origin: top;
           align-self: stretch;
         }
 
@@ -351,6 +470,7 @@ export default function LandingPage() {
           font-size: 12.5px;
           color: var(--text2);
           list-style: none;
+          transition: opacity 0.25s;
         }
 
         .morph__check { color: var(--green); flex-shrink: 0; }
@@ -360,81 +480,6 @@ export default function LandingPage() {
           background: var(--border);
           flex-shrink: 0;
           margin: 0 4px;
-        }
-
-        .landing__capabilities {
-          position: relative;
-          max-width: 1120px;
-          margin: 0 auto;
-          padding: 0 40px 96px;
-          border-top: 1px solid var(--border);
-          padding-top: 56px;
-        }
-
-        .landing__cap-head { margin-bottom: 36px; }
-
-        .landing__cap-kicker {
-          font-family: 'IBM Plex Mono', monospace;
-          font-size: 11px;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: var(--text3);
-          display: block;
-          margin-bottom: 10px;
-        }
-
-        .landing__cap-title {
-          font-family: 'Syne', sans-serif;
-          font-size: 24px;
-          font-weight: 600;
-          letter-spacing: -0.03em;
-          color: var(--text);
-        }
-
-        .landing__cap-list {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 0;
-          border-top: 1px solid var(--border);
-        }
-
-        .landing__cap-item {
-          display: flex;
-          gap: 16px;
-          padding: 28px 24px 28px 0;
-          border-right: 1px solid var(--border);
-          padding-right: 28px;
-          margin-right: 28px;
-        }
-
-        .landing__cap-item:last-child {
-          border-right: none;
-          margin-right: 0;
-          padding-right: 0;
-        }
-
-        .landing__cap-index {
-          font-family: 'IBM Plex Mono', monospace;
-          font-size: 12px;
-          font-weight: 500;
-          color: var(--lab-accent);
-          flex-shrink: 0;
-          padding-top: 3px;
-        }
-
-        .landing__cap-item h3 {
-          font-family: 'Syne', sans-serif;
-          font-size: 16px;
-          font-weight: 600;
-          color: var(--text);
-          margin-bottom: 8px;
-          letter-spacing: -0.02em;
-        }
-
-        .landing__cap-item p {
-          font-size: 13.5px;
-          line-height: 1.55;
-          color: var(--text2);
         }
 
         .landing__footer {
@@ -450,32 +495,35 @@ export default function LandingPage() {
           color: var(--text3);
         }
 
-        .landing__footer-sep {
-          width: 4px;
-          height: 4px;
-          background: var(--border);
-          border-radius: 50%;
+        @media (max-width: 960px) {
+          .landing__hero {
+            padding: 64px 24px 72px;
+          }
+
+          .landing__title {
+            max-width: none;
+            min-height: 3.2em;
+          }
+
+          .landing__capabilities {
+            padding: 48px 24px 80px;
+          }
+
+          .landing__cap-row {
+            grid-template-columns: 1fr;
+            gap: 28px;
+          }
+
+          .morph {
+            position: static;
+            grid-template-columns: 1fr;
+          }
+
+          .morph__divider { width: 100%; height: 1px; }
         }
 
-        @media (max-width: 900px) {
-          .landing__hero {
-            grid-template-columns: 1fr;
-            padding: 48px 24px 64px;
-            gap: 40px;
-          }
-          .landing__capabilities { padding: 48px 24px 72px; }
-          .landing__cap-list { grid-template-columns: 1fr; }
-          .landing__cap-item {
-            border-right: none;
-            margin-right: 0;
-            padding-right: 0;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 24px;
-            margin-bottom: 8px;
-          }
-          .landing__cap-item:last-child { border-bottom: none; }
-          .morph { grid-template-columns: 1fr; }
-          .morph__divider { width: 100%; height: 1px; }
+        @media (prefers-reduced-motion: reduce) {
+          .landing__caret { animation: none; opacity: 0; }
         }
       `}</style>
     </div>
