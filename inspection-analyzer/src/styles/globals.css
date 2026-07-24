@@ -139,6 +139,13 @@ button {
   padding: 36px 28px 64px;
 }
 
+.app-main--shell-wide {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 20px 28px 40px;
+}
+
 .two-column-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -683,6 +690,11 @@ button {
     padding: 24px 16px 48px;
   }
 
+  .app-main--shell-wide {
+    padding: 12px 10px 32px;
+    max-width: none;
+  }
+
   .site-header {
     padding: 0 16px;
     height: 52px;
@@ -723,6 +735,10 @@ button {
 @media (max-width: 480px) {
   .app-main--shell {
     padding: 16px 12px 40px;
+  }
+
+  .app-main--shell-wide {
+    padding: 12px 10px 32px;
   }
 
   .site-header__nav-link {
