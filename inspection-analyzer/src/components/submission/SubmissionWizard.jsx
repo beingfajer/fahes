@@ -236,7 +236,7 @@ export default function SubmissionWizard({ onSave, saved, saving, saveError }) {
                         onClick={() => onSave(result)}
                         disabled={saving}
                       >
-                        <Save size={16} /> {saving ? 'Saving...' : 'Save Report to Dashboard'}
+                        <Save size={16} /> {saving ? 'Saving...' : 'Save Report'}
                       </button>
                     )}
                     <button
