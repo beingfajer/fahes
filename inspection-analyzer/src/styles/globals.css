@@ -698,18 +698,22 @@ button {
 .check-item__chevron { margin-top: 2px; color: var(--text3); transition: transform 0.2s; }
 .check-item__chevron--open { transform: rotate(180deg); }
 
+.site-header__nav-short {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .app-main--shell {
-    padding: 24px 16px 48px;
+    padding: 20px 14px 40px;
   }
 
   .app-main--shell-wide {
-    padding: 12px 10px 32px;
+    padding: 8px 8px 20px;
     max-width: none;
   }
 
   .site-header {
-    padding: 0 16px;
+    padding: 0 14px;
     height: 52px;
   }
 
@@ -718,11 +722,11 @@ button {
   }
 
   .site-header__actions {
-    gap: 16px;
+    gap: 12px;
   }
 
   .site-header__nav {
-    gap: 14px;
+    gap: 12px;
   }
 
   .score-ring {
@@ -737,7 +741,7 @@ button {
   }
 
   .card {
-    padding: 20px 16px;
+    padding: 18px 14px;
   }
 
   .btn--primary {
@@ -747,15 +751,40 @@ button {
 
 @media (max-width: 480px) {
   .app-main--shell {
-    padding: 16px 12px 40px;
+    padding: 14px 10px 32px;
   }
 
   .app-main--shell-wide {
-    padding: 12px 10px 32px;
+    padding: 6px 6px 16px;
+  }
+
+  .site-header {
+    padding: 0 12px;
+  }
+
+  .site-header__actions {
+    gap: 8px;
+  }
+
+  .site-header__nav {
+    gap: 10px;
   }
 
   .site-header__nav a.site-header__nav-link,
   .site-header__nav button.site-header__nav-link {
-    font-size: 13px;
+    font-size: 12.5px;
+  }
+
+  .site-header__nav-full {
+    display: none;
+  }
+
+  .site-header__nav-short {
+    display: inline;
+  }
+
+  .theme-toggle {
+    width: 30px;
+    height: 30px;
   }
 }

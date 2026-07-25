@@ -422,12 +422,15 @@
 /* Mobile */
 @media (max-width: 767px) {
   .submission-wizard__card {
-    padding: 18px 14px;
-    border-radius: 14px;
+    padding: 20px 16px 16px;
+    border-radius: 16px;
+    min-height: calc(100dvh - 52px - 12px);
   }
 
   .submission-wizard__top {
-    margin-bottom: 18px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border2);
   }
 
   .submission-wizard__header {
@@ -435,7 +438,8 @@
   }
 
   .submission-wizard__title {
-    font-size: 20px;
+    font-size: 22px;
+    letter-spacing: -0.03em;
   }
 
   .submission-wizard__meta {
@@ -443,52 +447,62 @@
   }
 
   .submission-wizard__stepper {
-    margin-bottom: 4px;
+    margin-bottom: 0;
   }
 
   .submission-wizard__step {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     font-size: 12px;
   }
 
   .submission-wizard__step-line {
-    width: 40px;
+    width: min(48px, 12vw);
+  }
+
+  .submission-wizard__main {
+    flex: 1;
   }
 
   .submission-wizard__step-title {
-    font-size: 16px;
+    font-size: 17px;
   }
 
   .submission-wizard__step-subtitle {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
+    font-size: 13px;
   }
 
   .upload-zone {
-    min-height: 160px;
+    min-height: 180px;
+    border-radius: 14px;
   }
 
   .upload-zone--photos {
-    min-height: 140px;
+    min-height: 150px;
   }
 
   .upload-zone__label {
-    font-size: 13px;
+    font-size: 14px;
+    padding: 16px;
     word-break: break-word;
   }
 
   .submission-wizard__actions {
-    margin-top: 18px;
+    margin-top: auto;
+    padding-top: 20px;
+    gap: 10px;
   }
 
   .submission-wizard__actions--end {
-    justify-content: flex-end;
+    justify-content: stretch;
   }
 
   .submission-wizard__actions--end .btn {
-    width: auto;
+    width: 100%;
     min-width: 0;
-    padding: 10px 22px;
+    padding: 13px 18px;
+    font-size: 15px;
   }
 
   .submission-wizard__actions--stack .btn {
@@ -496,20 +510,24 @@
   }
 
   .submission-wizard__actions--split {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column-reverse;
+    align-items: stretch;
   }
 
   .submission-wizard__actions--split .btn {
-    width: auto;
+    width: 100%;
+    justify-content: center;
+    padding: 13px 18px;
   }
 
   .submission-wizard__analyze-btn.btn--primary {
-    width: auto;
+    width: 100%;
+    justify-content: center;
+    padding: 13px 18px;
+    font-size: 15px;
   }
 
   .analysis-panel__empty--compact {
-    padding: 24px 8px;
+    padding: 28px 8px;
   }
 }

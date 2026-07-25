@@ -22,7 +22,8 @@ export default function Header() {
             href="/submit"
             className={`site-header__nav-link${newReportActive ? ' site-header__nav-link--active' : ''}`}
           >
-            New report
+            <span className="site-header__nav-full">New report</span>
+            <span className="site-header__nav-short">New</span>
           </Link>
           <button
             type="button"
