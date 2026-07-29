@@ -72,41 +72,61 @@ Violation class options. Pick the closest:
 - improper_storage (items stored incorrectly or dangerously)
 - hygiene_violation (unclean surfaces, poor sanitation)
 - fire_exit_blocked (exits obstructed)
-- missing_fire_equipment (extinguishers missing or expired)
+- missing_fire_equipment (fire extinguisher missing, empty mounting bracket, expired/unavailable extinguisher)
 - electrical_hazard (exposed wiring, unsafe electrical)
 - missing_signage (required signs absent)
-- missing_first_aid (first aid kit absent or empty)
+- missing_first_aid (first aid kit absent, empty cabinet, or unstocked)
 - safety_hazard (any other safety risk)
 - no_violation (use ONLY if the image is fully compliant with no issues at all)
 
-IMPORTANT: If you describe any issue, hazard, or concern in your summary, hasViolation MUST be true.`
+Critical classification rules:
+- An empty wall bracket under a fire extinguisher / WATER / fire equipment sign is missing_fire_equipment (hasViolation=true).
+- An open or closed first aid cabinet with no supplies inside is missing_first_aid (hasViolation=true).
+- Do NOT use no_violation if you describe anything missing, empty, absent, blocked, or unsafe.
+- Prefer the specific class above over generic safety_hazard whenever it fits.`
+
+const CLAIM_EXTRACTION_PROMPT = `You extract distinct safety/hygiene violations that an inspection report says were FOUND.
+Return ONLY valid JSON (no markdown, no code fences):
+{
+  "claims": [
+    { "id": "<one of the allowed ids>", "label": "<short human label>" }
+  ]
+}
+
+Allowed ids:
+- missing_fire_equipment
+- missing_first_aid
+- fire_exit_blocked
+- food_safety_violation
+- hygiene_violation
+- electrical_hazard
+- missing_signage
+- improper_storage
+- safety_hazard
+
+Rules:
+- Include an item ONLY if the report states that issue was found / observed / identified.
+- If the report says first aid kits are stocked, or fire exits are clear, do NOT include those as claims.
+- If two different issues are found (e.g. missing extinguisher AND empty first aid kit), return TWO claims.
+- If no violations were found, return { "claims": [] }.`
 
 function parseJson(raw) {
   const clean = raw.replace(/```json|```/g, '').trim()
   return JSON.parse(clean)
 }
 
-function buildPhotoPrompt(fileName, claimedViolations = []) {
+function buildPhotoPrompt(claimedViolations = []) {
   let prompt = PHOTO_PROMPT
 
-  if (fileName) {
-    prompt += `\n\nThe uploaded file is named "${fileName}".`
-    if (/missing_first_aid/i.test(fileName)) {
-      prompt += ' Check whether the first aid kit is absent, empty, or unstocked. An empty cabinet counts as a violation.'
-    } else if (/missing_fire|fire_equip|blocked_fire|fire_ext/i.test(fileName)) {
-      prompt += ' Check whether fire extinguishers or fire safety equipment is missing, empty, blocked, or inaccessible.'
-    }
-  }
-
   if (claimedViolations?.length) {
-    const list = claimedViolations.map(c => `- ${c.label} (class: ${c.id})`).join('\n')
-    prompt += `\n\nThe written report claims these issues may appear in the photos. If this image shows one of them, prefer the matching violationClass:\n${list}`
+    const list = claimedViolations.map(c => `- ${c.label} → use class "${c.id}"`).join('\n')
+    prompt += `\n\nThe written report claims these issues. If this image shows one of them, you MUST use the matching violationClass:\n${list}`
   }
 
   return prompt
 }
 
-function normalizePhotoResult(parsed, fileName = '') {
+function normalizePhotoResult(parsed) {
   const summary = parsed.summary || 'No description returned.'
   let violationClass = parsed.violationClass || parsed.violation_class || 'no_violation'
   let hasViolation = parsed.hasViolation ?? parsed.has_violation
@@ -120,42 +140,31 @@ function normalizePhotoResult(parsed, fileName = '') {
   }
 
   const clearlyCompliant = /\b(no visible violations|fully compliant|no violations detected|no safety issues)\b/i.test(summary)
-  const describesConcern = /\b(safety violation|could obstruct|may pose| poses a|risk if|hazard|violation|obstruct|missing|empty|absent|unsafe|blocked|improper|concern|non-compliant|emergency|unstocked|not present)\b/i.test(summary)
+  const describesConcern = /\b(safety violation|could obstruct|may pose| poses a|risk if|hazard|violation|obstruct|missing|empty|absent|unsafe|blocked|improper|concern|non-compliant|emergency|unstocked|not present|bracket)\b/i.test(summary)
 
   if (!clearlyCompliant && describesConcern) {
     hasViolation = true
-    if (violationClass === 'no_violation') {
-      violationClass = /missing_fire|fire_equip|fire_ext|extinguisher/i.test(summary)
-        ? 'missing_fire_equipment'
-        : /first aid/i.test(summary)
-          ? 'missing_first_aid'
-          : 'safety_hazard'
+  }
+
+  // Infer a specific class from the summary when the model is vague
+  if (hasViolation) {
+    if (/first aid/i.test(summary) && /(empty|missing|absent|unstocked|no (supplies|contents|materials)|inadequate)/i.test(summary)) {
+      violationClass = 'missing_first_aid'
+    } else if (
+      /(extinguish|fire equipment|fire safety|water sign|mounting bracket|wall bracket)/i.test(summary)
+      && /(missing|absent|empty|not present|unavailable|removed|no extinguisher)/i.test(summary)
+    ) {
+      violationClass = 'missing_fire_equipment'
+    } else if (violationClass === 'no_violation') {
+      violationClass = 'safety_hazard'
     }
   }
 
-  let result = {
+  return {
     hasViolation: hasViolation === true,
     violationClass,
     summary,
   }
-
-  const name = fileName.toLowerCase()
-  if (!result.hasViolation && /missing_first_aid/i.test(name) && /first aid/i.test(summary)) {
-    const confirmsStocked = /\b(stocked|fully equipped|complete kit|supplies (are )?present|adequately equipped|contents (are )?present)\b/i.test(summary)
-    if (!confirmsStocked) {
-      result = { hasViolation: true, violationClass: 'missing_first_aid', summary }
-    }
-  }
-
-  if (!result.hasViolation && /missing_fire|fire_equip|blocked_fire|fire_ext/i.test(name) && /fire|extinguisher/i.test(summary)) {
-    const confirmsPresent = /\b(extinguisher (is )?present|equipment (is )?present|fully equipped|properly installed and accessible)\b/i.test(summary)
-    const issueDescribed = /\b(empty|missing|absent|blocked|violation|unavailable)\b/i.test(summary)
-    if (issueDescribed || !confirmsPresent) {
-      result = { hasViolation: true, violationClass: 'missing_fire_equipment', summary }
-    }
-  }
-
-  return result
 }
 
 function getProvider() {
@@ -325,7 +334,7 @@ export async function analyzePhotoWithAI(base64Image, mimeType = 'image/jpeg', f
   const provider = getProvider()
   assertProviderReady(provider)
 
-  const photoPrompt = buildPhotoPrompt(fileName, claimedViolations)
+  const photoPrompt = buildPhotoPrompt(claimedViolations)
 
   try {
     let raw
@@ -365,7 +374,7 @@ export async function analyzePhotoWithAI(base64Image, mimeType = 'image/jpeg', f
       }], { maxTokens: 300, json: true })
     }
 
-    return normalizePhotoResult(parseJson(raw), fileName)
+    return normalizePhotoResult(parseJson(raw))
   } catch (err) {
     console.error('Photo analysis error:', err)
     return {
@@ -373,5 +382,47 @@ export async function analyzePhotoWithAI(base64Image, mimeType = 'image/jpeg', f
       violationClass: 'no_violation',
       summary: 'Photo analysis failed. Please review manually.',
     }
+  }
+}
+
+export async function extractClaimedViolationsWithAI(reportText) {
+  const provider = getProvider()
+  assertProviderReady(provider)
+
+  const userMessage = `Extract the found violations from this inspection report:\n\n${reportText}`
+
+  try {
+    let raw
+    if (provider === 'azure') {
+      raw = await chatWithAzure([
+        { role: 'system', content: CLAIM_EXTRACTION_PROMPT },
+        { role: 'user', content: userMessage },
+      ], { json: true, maxTokens: 500 })
+    } else if (provider === 'groq') {
+      raw = await chatWithGroq([
+        { role: 'system', content: CLAIM_EXTRACTION_PROMPT },
+        { role: 'user', content: userMessage },
+      ], { json: true, maxTokens: 500 })
+    } else if (provider === 'gemini') {
+      raw = await chatWithGemini(`${CLAIM_EXTRACTION_PROMPT}\n\n${userMessage}`, { json: true })
+    } else {
+      raw = await chatWithOpenAI([
+        { role: 'system', content: CLAIM_EXTRACTION_PROMPT },
+        { role: 'user', content: userMessage },
+      ], { json: true, maxTokens: 500 })
+    }
+
+    const parsed = parseJson(raw)
+    const claims = Array.isArray(parsed?.claims) ? parsed.claims : []
+    return claims
+      .filter(c => c && c.id)
+      .map(c => ({
+        id: String(c.id),
+        label: String(c.label || c.id.replace(/_/g, ' ')),
+        classNames: [String(c.id)],
+      }))
+  } catch (err) {
+    console.error('Claim extraction error:', err)
+    return []
   }
 }

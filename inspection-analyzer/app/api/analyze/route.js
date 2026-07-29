@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { extractTextFromDocument } from '@/lib/document'
-import { analyzeReport, analyzePhotoWithAI } from '@/lib/ai'
+import { analyzeReport, analyzePhotoWithAI, extractClaimedViolationsWithAI } from '@/lib/ai'
 import {
   reportMentionsViolation,
   extractClaimedViolations,
+  mergeClaimedViolations,
   buildClaimPhotoChecks,
 } from '@/lib/report'
 import { saveBuffer, saveUploadedFile } from '@/lib/storage'
@@ -43,7 +44,9 @@ export async function POST(request) {
     const analysis = await analyzeReport(extractedText)
 
     const mentionsViolation = reportMentionsViolation(extractedText)
-    const claimedViolations = extractClaimedViolations(extractedText)
+    const heuristicClaims = extractClaimedViolations(extractedText)
+    const aiClaims = await extractClaimedViolationsWithAI(extractedText)
+    const claimedViolations = mergeClaimedViolations(heuristicClaims, aiClaims)
     console.log('Claimed violations:', claimedViolations.map(c => c.id).join(', ') || '(none)')
 
     const photos = []

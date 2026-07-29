@@ -53,14 +53,14 @@ export const VIOLATION_CLAIM_TYPES = [
     label: 'Missing fire extinguisher / fire equipment',
     classNames: ['missing_fire_equipment'],
     clearPatterns: [
-      /fire\s*extinguish\w*[^.?]{0,50}\b(present|available|accessible|in place|properly installed)\b/i,
-      /\b(present|available|accessible)\b[^.?]{0,40}fire\s*extinguish/i,
+      /fire\s*extinguish\w*[^.?]{0,40}\b(is present|are present|in place|properly installed)\b/i,
     ],
     patterns: [
-      /fire\s*extinguish\w*[^.?]{0,60}\b(missing|absent|empty|not found|unavailable|removed)\b/i,
-      /\b(missing|absent|empty|not found|unavailable)\b[^.?]{0,60}fire\s*(extinguish\w*|safety equipment|equipment)\b/i,
+      /fire\s*extinguish\w*[^.?]{0,80}\b(missing|absent|empty|not found|unavailable|removed)\b/i,
+      /\b(missing|absent|empty|not found|unavailable|removed)\b[^.?]{0,80}fire\s*(extinguish\w*|safety equipment|equipment)\b/i,
       /fire\s+safety\s+equipment[^.?]{0,40}\b(missing|absent|empty)\b/i,
-      /designated wall bracket was empty/i,
+      /\b(wall|mounting)\s+bracket was empty\b/i,
+      /\bno\s+(alternative\s+)?(fire\s*)?extinguish/i,
     ],
   },
   {
@@ -154,7 +154,7 @@ export const VIOLATION_CLAIM_TYPES = [
  * Extract specific violation claims from report text for photo-evidence matching.
  */
 export function extractClaimedViolations(reportText) {
-  if (!reportText || !reportMentionsViolation(reportText)) return []
+  if (!reportText) return []
 
   const text = reportText.replace(/\s+/g, ' ')
   const claims = []
@@ -170,7 +170,44 @@ export function extractClaimedViolations(reportText) {
     }
   }
 
+  // If no specific claims matched but the report clearly finds a violation,
+  // keep a generic claim so photo evidence is still required.
+  if (!claims.length && reportMentionsViolation(reportText)) {
+    claims.push({
+      id: 'safety_hazard',
+      label: 'Reported safety / hygiene violation',
+      classNames: ['safety_hazard', 'hygiene_violation', 'missing_fire_equipment', 'missing_first_aid', 'food_safety_violation', 'improper_storage', 'electrical_hazard', 'fire_exit_blocked', 'missing_signage'],
+    })
+  }
+
   return claims
+}
+
+/**
+ * Merge heuristic + AI claims by id (AI labels win when both exist).
+ */
+export function mergeClaimedViolations(...lists) {
+  const byId = new Map()
+  for (const list of lists) {
+    for (const claim of list || []) {
+      if (!claim?.id) continue
+      const existing = byId.get(claim.id)
+      byId.set(claim.id, {
+        id: claim.id,
+        label: claim.label || existing?.label || claim.id.replace(/_/g, ' '),
+        classNames: Array.from(new Set([
+          ...(existing?.classNames || []),
+          ...(claim.classNames || [claim.id]),
+        ])),
+      })
+    }
+  }
+  // Drop the generic fallback if we have specific claims
+  if (byId.size > 1 && byId.has('safety_hazard')) {
+    const onlyGeneric = [...byId.values()].every(c => c.id === 'safety_hazard')
+    if (!onlyGeneric) byId.delete('safety_hazard')
+  }
+  return Array.from(byId.values())
 }
 
 /**
@@ -188,10 +225,13 @@ export function detectPhotoViolationClasses(photos = []) {
     }
 
     const summary = (photo.summary || '').toLowerCase()
-    if (/first aid/.test(summary) && /(empty|missing|absent|unstocked|no contents|inadequate)/.test(summary)) {
+    if (/first aid/.test(summary) && /(empty|missing|absent|unstocked|no contents|no supplies|inadequate)/.test(summary)) {
       detected.add('missing_first_aid')
     }
-    if (/(extinguish|fire equipment|fire safety)/.test(summary) && /(missing|absent|empty|not present|unavailable|bracket was empty)/.test(summary)) {
+    if (
+      /(extinguish|fire equipment|fire safety|water sign|mounting bracket|wall bracket|no extinguisher)/.test(summary)
+      && /(missing|absent|empty|not present|unavailable|removed|bracket)/.test(summary)
+    ) {
       detected.add('missing_fire_equipment')
     }
     if (/fire exit/.test(summary) && /(blocked|obstruct)/.test(summary)) {
@@ -228,7 +268,7 @@ export function buildClaimPhotoChecks(claims, photos = []) {
   const detected = detectPhotoViolationClasses(photos)
 
   return claims.map(claim => {
-    const covered = claim.classNames.some(c => detected.has(c))
+    const covered = (claim.classNames || [claim.id]).some(c => detected.has(c))
     return {
       label: `Photo evidence: ${claim.label}`,
       pass: covered,
