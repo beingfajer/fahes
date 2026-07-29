@@ -85,7 +85,7 @@ Critical classification rules:
 - Do NOT use no_violation if you describe anything missing, empty, absent, blocked, or unsafe.
 - Prefer the specific class above over generic safety_hazard whenever it fits.`
 
-const CLAIM_EXTRACTION_PROMPT = `You extract distinct safety/hygiene violations that an inspection report says were FOUND.
+const CLAIM_EXTRACTION_PROMPT = `You extract DISTINCT safety/hygiene violations that an inspection report says were FOUND.
 Return ONLY valid JSON (no markdown, no code fences):
 {
   "claims": [
@@ -105,9 +105,13 @@ Allowed ids:
 - safety_hazard
 
 Rules:
+- ONE claim per distinct physical issue. Never split one issue into multiple claims.
+  Example: uncovered raw meat left on freezers = ONE claim (food_safety_violation), NOT separate hygiene + storage claims.
+- Prefer the most specific id. For food/meat/storage/temperature problems use food_safety_violation (not hygiene_violation or improper_storage).
+- Use hygiene_violation only for cleanliness issues that are NOT about food storage (mold, stained linens, dirty surfaces).
 - Include an item ONLY if the report states that issue was found / observed / identified.
-- If the report says first aid kits are stocked, or fire exits are clear, do NOT include those as claims.
-- If two different issues are found (e.g. missing extinguisher AND empty first aid kit), return TWO claims.
+- If the report says kits are stocked or exits are clear, do NOT include those.
+- If two truly different issues are found (e.g. missing extinguisher AND empty first aid kit), return TWO claims.
 - If no violations were found, return { "claims": [] }.`
 
 function parseJson(raw) {

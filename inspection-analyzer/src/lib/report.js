@@ -92,22 +92,28 @@ export const VIOLATION_CLAIM_TYPES = [
   {
     id: 'food_safety_violation',
     label: 'Food safety violation',
-    classNames: ['food_safety_violation'],
+    classNames: ['food_safety_violation', 'improper_storage', 'hygiene_violation'],
     clearPatterns: [
       /food storage[^.?]{0,50}\b(properly|correct|compliant)\b/i,
     ],
     patterns: [
       /\b(improper|unsafe)\s+food\b/i,
-      /uncovered food/i,
+      /improper food storage/i,
+      /uncovered (food|raw meat|meat)/i,
       /food[^.?]{0,40}(temperature|storage)[^.?]{0,40}(wrong|improper|unsafe|incorrect)/i,
-      /raw meat[^.?]{0,40}(stored|left|improper)/i,
+      /raw meat[^.?]{0,40}(stored|left|improper|uncovered|hygiene)/i,
+      /hygiene[^.?]{0,60}(uncovered|raw meat|food storage)/i,
     ],
   },
   {
     id: 'hygiene_violation',
     label: 'Hygiene / sanitation violation',
     classNames: ['hygiene_violation'],
-    clearPatterns: [],
+    // Skip when "hygiene" is just describing a food/meat issue (one photo = one claim)
+    clearPatterns: [
+      /hygiene[^.?]{0,80}\b(food|meat|storage|uncovered|temperature|refriger|freezer)\b/i,
+      /\b(food|meat|storage|uncovered)\b[^.?]{0,80}hygiene/i,
+    ],
     patterns: [
       /\bhygiene violation\b/i,
       /\b(stained|soiled)\s+(linens?|sheets?|towels?)\b/i,
@@ -141,7 +147,12 @@ export const VIOLATION_CLAIM_TYPES = [
     id: 'improper_storage',
     label: 'Improper storage',
     classNames: ['improper_storage'],
-    clearPatterns: [],
+    // Food storage is covered by food_safety_violation — don't double-claim
+    clearPatterns: [
+      /improper\s+food\s+storage/i,
+      /food[^.?]{0,40}improper storage/i,
+      /raw meat/i,
+    ],
     patterns: [
       /improper storage/i,
       /stored incorrectly/i,
@@ -184,7 +195,7 @@ export function extractClaimedViolations(reportText) {
 }
 
 /**
- * Merge heuristic + AI claims by id (AI labels win when both exist).
+ * Merge heuristic + AI claims by id, then collapse overlapping food-related duplicates.
  */
 export function mergeClaimedViolations(...lists) {
   const byId = new Map()
@@ -202,54 +213,86 @@ export function mergeClaimedViolations(...lists) {
       })
     }
   }
-  // Drop the generic fallback if we have specific claims
+
+  // Drop generic fallback when specific claims exist
   if (byId.size > 1 && byId.has('safety_hazard')) {
-    const onlyGeneric = [...byId.values()].every(c => c.id === 'safety_hazard')
-    if (!onlyGeneric) byId.delete('safety_hazard')
+    byId.delete('safety_hazard')
   }
+
+  // Collapse overlapping food claims into one (one photo = one food issue)
+  const foodIds = ['food_safety_violation', 'improper_storage', 'hygiene_violation']
+  const presentFood = foodIds.filter(id => byId.has(id))
+  if (presentFood.length > 1) {
+    const preferred =
+      byId.get('food_safety_violation')
+      || byId.get('improper_storage')
+      || byId.get('hygiene_violation')
+
+    // Only collapse hygiene into food when the hygiene label is food-related
+    const hygiene = byId.get('hygiene_violation')
+    const hygieneIsFood = hygiene && /food|meat|storage|uncovered|temperature|refriger|freezer/i.test(hygiene.label)
+    const toDrop = presentFood.filter(id => {
+      if (id === preferred.id) return false
+      if (id === 'hygiene_violation' && !hygieneIsFood) return false
+      return true
+    })
+
+    if (toDrop.length) {
+      const mergedClasses = new Set(preferred.classNames || [preferred.id])
+      for (const id of toDrop) {
+        const c = byId.get(id)
+        ;(c?.classNames || [id]).forEach(x => mergedClasses.add(x))
+        byId.delete(id)
+      }
+      // Always accept food family classes for the surviving food claim
+      ;['food_safety_violation', 'improper_storage'].forEach(x => mergedClasses.add(x))
+      if (hygieneIsFood) mergedClasses.add('hygiene_violation')
+      byId.set(preferred.id, {
+        ...preferred,
+        classNames: Array.from(mergedClasses),
+      })
+    }
+  }
+
   return Array.from(byId.values())
 }
 
-/**
- * Infer violation classes present in analyzed photos (class + summary cues).
- */
-export function detectPhotoViolationClasses(photos = []) {
-  const detected = new Set()
+function photoCoversClaimScore(claim, photo) {
+  const hasViolation = photo.hasViolation || (photo.violationClass && photo.violationClass !== 'no_violation')
+  if (!hasViolation) return 0
 
-  for (const photo of photos) {
-    const hasViolation = photo.hasViolation || (photo.violationClass && photo.violationClass !== 'no_violation')
-    if (!hasViolation) continue
+  const claimClasses = new Set(claim.classNames || [claim.id])
+  const photoClass = photo.violationClass || ''
+  const summary = (photo.summary || '').toLowerCase()
+  const label = (claim.label || '').toLowerCase()
 
-    if (photo.violationClass && photo.violationClass !== 'no_violation') {
-      detected.add(photo.violationClass)
-    }
+  let score = 0
+  if (claimClasses.has(photoClass)) score += 5
+  if (photoClass === claim.id) score += 2
 
-    const summary = (photo.summary || '').toLowerCase()
-    if (/first aid/.test(summary) && /(empty|missing|absent|unstocked|no contents|no supplies|inadequate)/.test(summary)) {
-      detected.add('missing_first_aid')
-    }
-    if (
-      /(extinguish|fire equipment|fire safety|water sign|mounting bracket|wall bracket|no extinguisher)/.test(summary)
-      && /(missing|absent|empty|not present|unavailable|removed|bracket)/.test(summary)
-    ) {
-      detected.add('missing_fire_equipment')
-    }
-    if (/fire exit/.test(summary) && /(blocked|obstruct)/.test(summary)) {
-      detected.add('fire_exit_blocked')
-    }
-    if (/(hygiene|mold|stained|unsanitary|sanitation)/.test(summary)) {
-      detected.add('hygiene_violation')
-    }
-    if (/(food|raw meat|temperature)/.test(summary) && /(improper|unsafe|uncovered|wrong)/.test(summary)) {
-      detected.add('food_safety_violation')
+  // Related food-family matching for one food photo covering one food claim
+  const foodFamily = new Set(['food_safety_violation', 'improper_storage', 'hygiene_violation'])
+  if (foodFamily.has(claim.id) && foodFamily.has(photoClass)) {
+    if (/food|meat|storage|uncovered|temperature|freezer|refriger|tray|container/.test(`${label} ${summary}`)) {
+      score += 4
     }
   }
 
-  return detected
+  // Summary / label keyword boosts
+  if (claim.id === 'missing_first_aid' && /first aid/.test(summary) && /(empty|missing|absent|unstocked)/.test(summary)) score += 5
+  if (claim.id === 'missing_fire_equipment' && /(extinguish|fire equipment|bracket)/.test(summary) && /(missing|empty|absent|unavailable)/.test(summary)) score += 5
+  if (claim.id === 'fire_exit_blocked' && /fire exit/.test(summary) && /(blocked|obstruct)/.test(summary)) score += 5
+
+  // Weak label token overlap
+  const labelTokens = label.split(/[^a-z0-9]+/).filter(t => t.length > 3)
+  const overlap = labelTokens.filter(t => summary.includes(t)).length
+  score += Math.min(overlap, 2)
+
+  return score
 }
 
 /**
- * Match each claimed violation to photo evidence.
+ * Match claims to photos 1:1 — each photo covers at most one claim.
  * Returns checklist-ready items: { label, pass, hint, claimId, covered }
  */
 export function buildClaimPhotoChecks(claims, photos = []) {
@@ -265,10 +308,30 @@ export function buildClaimPhotoChecks(claims, photos = []) {
     }))
   }
 
-  const detected = detectPhotoViolationClasses(photos)
+  const violatingPhotos = photos.filter(
+    p => p.hasViolation || (p.violationClass && p.violationClass !== 'no_violation')
+  )
 
-  return claims.map(claim => {
-    const covered = (claim.classNames || [claim.id]).some(c => detected.has(c))
+  // Build candidate pairs and greedily assign each photo to its best unmatched claim
+  const pairs = []
+  for (let pi = 0; pi < violatingPhotos.length; pi++) {
+    for (let ci = 0; ci < claims.length; ci++) {
+      const score = photoCoversClaimScore(claims[ci], violatingPhotos[pi])
+      if (score > 0) pairs.push({ pi, ci, score })
+    }
+  }
+  pairs.sort((a, b) => b.score - a.score)
+
+  const usedPhotos = new Set()
+  const coveredClaims = new Set()
+  for (const pair of pairs) {
+    if (usedPhotos.has(pair.pi) || coveredClaims.has(pair.ci)) continue
+    usedPhotos.add(pair.pi)
+    coveredClaims.add(pair.ci)
+  }
+
+  return claims.map((claim, ci) => {
+    const covered = coveredClaims.has(ci)
     return {
       label: `Photo evidence: ${claim.label}`,
       pass: covered,
