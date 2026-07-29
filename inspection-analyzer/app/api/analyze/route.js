@@ -79,8 +79,22 @@ export async function POST(request) {
       })
     }
 
+    // Recalculate score from the final checklist (including photo checks)
+    const passed = checks.filter(c => c.pass).length
+    const score = checks.length ? Math.round((passed / checks.length) * 100) : 0
+
+    let summary = analysis.summary || ''
+    if (mentionsViolation && photos.length === 0) {
+      summary = summary.replace(/\bno violations were identified\b/gi, 'a violation was identified')
+      if (!/photo/i.test(summary)) {
+        summary = `${summary} Supporting violation photos were not uploaded.`.trim()
+      }
+    }
+
     return NextResponse.json({
       ...analysis,
+      score,
+      summary,
       checks,
       text: extractedText,
       documentName: savedDoc.fileName,
