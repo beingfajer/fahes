@@ -14,7 +14,9 @@ const SAMPLE_CHECKS = [
   'Owner / contact present',
 ]
 
-const HEADLINE = 'Catch incomplete reports before enforcement stalls'
+const HEADLINE_PREFIX = 'Catch incomplete reports before enforcement '
+const HEADLINE_STALL = 'staaaaaaaaaaaaaaaalls'
+const HEADLINE = HEADLINE_PREFIX + HEADLINE_STALL
 
 const CAPABILITIES = [
   {
@@ -66,9 +68,14 @@ function TypewriterTitle({ text, active }) {
     return () => clearInterval(id)
   }, [text, active])
 
+  const prefixLen = HEADLINE_PREFIX.length
+  const prefix = shown.slice(0, Math.min(shown.length, prefixLen))
+  const stall = shown.length > prefixLen ? shown.slice(prefixLen) : ''
+
   return (
     <h1 className="landing__title">
-      {shown}
+      {prefix}
+      {stall ? <span className="landing__title-stall">{stall}</span> : null}
       <span className={`landing__caret${done ? ' landing__caret--done' : ''}`} aria-hidden />
     </h1>
   )
@@ -156,7 +163,7 @@ export default function LandingPage() {
         onViewportLeave={() => setHeroInView(false)}
       >
         <div className="landing__hero-text">
-          <p className="landing__brand">Fahes</p>
+          <p className="landing__brand">FAHES</p>
           <TypewriterTitle text={HEADLINE} active={heroInView} />
           <div className="landing__cta-row">
             <Link href="/submit" className="landing__cta">
@@ -226,8 +233,9 @@ export default function LandingPage() {
 
         .landing__hero {
           position: relative;
-          max-width: 1180px;
-          margin: 0 auto;
+          max-width: none;
+          width: 100%;
+          margin: 0;
           padding: 96px 40px 100px;
         }
 
@@ -244,13 +252,27 @@ export default function LandingPage() {
         .landing__title {
           font-family: 'Syne', sans-serif;
           font-weight: 600;
-          font-size: clamp(30px, 4.6vw, 48px);
-          line-height: 1.18;
+          font-size: clamp(32px, 5.2vw, 56px);
+          line-height: 1.12;
           color: var(--text);
           letter-spacing: -0.035em;
           margin-bottom: 36px;
-          max-width: 18ch;
-          min-height: 2.5em;
+          max-width: min(100%, 34ch);
+          min-height: 1.2em;
+        }
+
+        .landing__title-stall {
+          letter-spacing: 0.02em;
+          background: linear-gradient(
+            90deg,
+            var(--text) 0%,
+            var(--lab-accent) 38%,
+            color-mix(in srgb, var(--lab-accent) 55%, transparent) 72%,
+            transparent 100%
+          );
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
         }
 
         .landing__caret {
@@ -316,8 +338,9 @@ export default function LandingPage() {
 
         .landing__capabilities {
           position: relative;
-          max-width: 1180px;
-          margin: 0 auto;
+          max-width: none;
+          width: 100%;
+          margin: 0;
           padding: 0 40px 110px;
           padding-top: 64px;
         }
@@ -502,7 +525,7 @@ export default function LandingPage() {
 
           .landing__title {
             max-width: none;
-            min-height: 3.2em;
+            min-height: 2.4em;
           }
 
           .landing__capabilities {

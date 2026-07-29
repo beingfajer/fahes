@@ -13,7 +13,7 @@ export default function Header() {
   return (
     <header className="site-header">
       <Link href="/" className="site-header__brand">
-        <span className="site-header__mark">Fahes</span>
+        <span className="site-header__mark">FAHES</span>
       </Link>
 
       <div className="site-header__actions">

@@ -17,7 +17,14 @@ Analyze the given inspection report and return ONLY valid JSON (no markdown, no 
     {"label": "Corrective actions documented", "pass": <true/false>, "hint": ""},
     {"label": "Follow-up scheduled", "pass": <true/false>, "hint": ""}
   ]
-}`
+}
+
+Checklist rules:
+- First decide whether the report states that a real violation/issue WAS FOUND (e.g. "there was a violation", "found a hazard", "identified non-compliance"). Phrases like "no violation", "no violations found", "did not find any issues", "fully compliant", or merely using the word "violation" in a negative/clear context do NOT count as finding a violation.
+- "Violation code referenced": REQUIRED only when a violation was found. If no violation was found, set pass=true and hint="". If a violation was found but no code is cited, set pass=false with a short hint.
+- "Severity level assessed": same rule as violation code — only required when a violation was found; otherwise pass=true.
+- "Corrective actions documented" and "Follow-up scheduled": only required when a violation was found; otherwise pass=true.
+- Do NOT fail any check just because the word "violation" appears in the document.`
 
 const FIELD_EXTRACTION_PROMPT = `You are a data extraction assistant for Qatar Tourism Authority inspection reports.
 Extract the following fields from the inspection report text.

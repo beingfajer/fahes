@@ -61,13 +61,14 @@ export async function POST(request) {
 
     // photo-related checklist items
     const checks = [...analysis.checks]
+    // Photo evidence is only required when the report states a violation was found
     const mentionsViolation = reportMentionsViolation(extractedText)
 
     if (mentionsViolation && photos.length === 0) {
       checks.push({
         label: 'Violation photo evidence uploaded',
         pass: false,
-        hint: 'The report references a violation but no supporting photos were uploaded.',
+        hint: 'The report states a violation was found, but no supporting photos were uploaded.',
       })
     } else if (photos.length > 0) {
       const anyViolation = photos.some(p => p.hasViolation || (p.violationClass && p.violationClass !== 'no_violation'))
