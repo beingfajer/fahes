@@ -28,6 +28,7 @@ export const TEMPLATE_FIELDS = [
 
 const MISSING_COLOR = 'C0392B'
 const ACCENT_COLOR = '1B7A8C'
+const FAHES_GREEN = '1E8E3E'
 const CELL_BORDER = { style: BorderStyle.SINGLE, size: 4, color: 'CCD5DB' }
 const CELL_BORDERS = { top: CELL_BORDER, bottom: CELL_BORDER, left: CELL_BORDER, right: CELL_BORDER }
 
@@ -227,8 +228,10 @@ export async function buildStructuredReportDocx(report, fields) {
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            spacing: { after: 40 },
-            children: [new TextRun({ text: 'QATAR TOURISM AUTHORITY', bold: true, size: 32, color: ACCENT_COLOR })],
+            spacing: { after: 80 },
+            children: [
+              new TextRun({ text: '✓  Checked by FAHES', bold: true, size: 28, color: FAHES_GREEN }),
+            ],
           }),
           new Paragraph({
             alignment: AlignmentType.CENTER,
