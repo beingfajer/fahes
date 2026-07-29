@@ -86,16 +86,24 @@ function parseJson(raw) {
   return JSON.parse(clean)
 }
 
-function buildPhotoPrompt(fileName) {
-  if (!fileName) return PHOTO_PROMPT
+function buildPhotoPrompt(fileName, claimedViolations = []) {
+  let prompt = PHOTO_PROMPT
 
-  let extra = `\n\nThe uploaded file is named "${fileName}".`
-  if (/missing_first_aid/i.test(fileName)) {
-    extra += ' Check whether the first aid kit is absent, empty, or unstocked. An empty cabinet counts as a violation.'
-  } else if (/missing_fire|fire_equip|blocked_fire|fire_ext/i.test(fileName)) {
-    extra += ' Check whether fire extinguishers or fire safety equipment is missing, empty, blocked, or inaccessible.'
+  if (fileName) {
+    prompt += `\n\nThe uploaded file is named "${fileName}".`
+    if (/missing_first_aid/i.test(fileName)) {
+      prompt += ' Check whether the first aid kit is absent, empty, or unstocked. An empty cabinet counts as a violation.'
+    } else if (/missing_fire|fire_equip|blocked_fire|fire_ext/i.test(fileName)) {
+      prompt += ' Check whether fire extinguishers or fire safety equipment is missing, empty, blocked, or inaccessible.'
+    }
   }
-  return PHOTO_PROMPT + extra
+
+  if (claimedViolations?.length) {
+    const list = claimedViolations.map(c => `- ${c.label} (class: ${c.id})`).join('\n')
+    prompt += `\n\nThe written report claims these issues may appear in the photos. If this image shows one of them, prefer the matching violationClass:\n${list}`
+  }
+
+  return prompt
 }
 
 function normalizePhotoResult(parsed, fileName = '') {
@@ -313,11 +321,11 @@ export async function extractReportFields(reportText) {
   return parseJson(raw)
 }
 
-export async function analyzePhotoWithAI(base64Image, mimeType = 'image/jpeg', fileName = '') {
+export async function analyzePhotoWithAI(base64Image, mimeType = 'image/jpeg', fileName = '', claimedViolations = []) {
   const provider = getProvider()
   assertProviderReady(provider)
 
-  const photoPrompt = buildPhotoPrompt(fileName)
+  const photoPrompt = buildPhotoPrompt(fileName, claimedViolations)
 
   try {
     let raw

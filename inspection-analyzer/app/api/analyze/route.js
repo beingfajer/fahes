@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { extractTextFromDocument } from '@/lib/document'
 import { analyzeReport, analyzePhotoWithAI } from '@/lib/ai'
-import { reportMentionsViolation } from '@/lib/report'
+import {
+  reportMentionsViolation,
+  extractClaimedViolations,
+  buildClaimPhotoChecks,
+} from '@/lib/report'
 import { saveBuffer, saveUploadedFile } from '@/lib/storage'
 
 export const maxDuration = 60
@@ -38,6 +42,10 @@ export async function POST(request) {
     const savedDoc = await saveBuffer(docBuffer, document.name, 'documents')
     const analysis = await analyzeReport(extractedText)
 
+    const mentionsViolation = reportMentionsViolation(extractedText)
+    const claimedViolations = extractClaimedViolations(extractedText)
+    console.log('Claimed violations:', claimedViolations.map(c => c.id).join(', ') || '(none)')
+
     const photos = []
     for (const entry of photoEntries) {
       if (!entry || typeof entry === 'string') continue
@@ -45,7 +53,7 @@ export async function POST(request) {
 
       const saved = await saveUploadedFile(entry, 'photos')
       const base64 = saved.buffer.toString('base64')
-      const cv = await analyzePhotoWithAI(base64, entry.type, saved.fileName)
+      const cv = await analyzePhotoWithAI(base64, entry.type, saved.fileName, claimedViolations)
 
       console.log(`Photo: ${saved.fileName} → class: ${cv.violationClass} | summary: ${cv.summary}`)
 
@@ -59,12 +67,13 @@ export async function POST(request) {
       })
     }
 
-    // photo-related checklist items
+    // Prefer per-claim photo matching when the report names specific issues
     const checks = [...analysis.checks]
-    // Photo evidence is only required when the report states a violation was found
-    const mentionsViolation = reportMentionsViolation(extractedText)
+    const claimChecks = buildClaimPhotoChecks(claimedViolations, photos)
 
-    if (mentionsViolation && photos.length === 0) {
+    if (claimChecks.length > 0) {
+      checks.push(...claimChecks.map(({ label, pass, hint }) => ({ label, pass, hint })))
+    } else if (mentionsViolation && photos.length === 0) {
       checks.push({
         label: 'Violation photo evidence uploaded',
         pass: false,
@@ -84,7 +93,13 @@ export async function POST(request) {
     const score = checks.length ? Math.round((passed / checks.length) * 100) : 0
 
     let summary = analysis.summary || ''
-    if (mentionsViolation && photos.length === 0) {
+    const uncovered = claimChecks.filter(c => !c.pass)
+    if (uncovered.length > 0) {
+      const names = uncovered.map(c => c.label.replace(/^Photo evidence:\s*/i, '')).join('; ')
+      if (!/photo evidence/i.test(summary)) {
+        summary = `${summary} Missing photo evidence for: ${names}.`.trim()
+      }
+    } else if (mentionsViolation && photos.length === 0) {
       summary = summary.replace(/\bno violations were identified\b/gi, 'a violation was identified')
       if (!/photo/i.test(summary)) {
         summary = `${summary} Supporting violation photos were not uploaded.`.trim()
@@ -96,6 +111,7 @@ export async function POST(request) {
       score,
       summary,
       checks,
+      claimedViolations,
       text: extractedText,
       documentName: savedDoc.fileName,
       documentPath: savedDoc.relativePath,
